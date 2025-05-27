@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #2b2d31; /* Discord's dark background */
+  color: #f2f3f5; /* Light text color */
+}
