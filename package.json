@@ -10,6 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bbob/core": "^4.2.0",
+    "@bbob/html": "^4.2.0",
+    "@bbob/preset-html5": "^4.2.0",
+    "@bbob/preset-react": "^4.2.0",
+    "@bbob/react": "^4.2.0",
+    "bbcodejs": "^0.0.4",
+    "express-session": "^1.18.1",
+    "openid-client": "^6.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.7"

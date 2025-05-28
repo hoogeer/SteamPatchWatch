@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { useEffect, useState } from "react";
 
 interface Game {
@@ -27,11 +28,12 @@ interface PatchNote {
     voteupcount: number;
     votedowncount: number;
     forum_topic_id: string;
+    clanid?: string | number;
   };
 }
 
-interface GameWithNotes extends Game {
-  patchNotes: PatchNote[];
+interface MajorUpdateNote extends PatchNote {
+  gameName: string;
 }
 
 function App() {
@@ -47,12 +49,21 @@ function App() {
   >([]);
   const [hasFetchedPatches, setHasFetchedPatches] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const [recentMajorUpdates, setRecentMajorUpdates] = useState<
+    MajorUpdateNote[]
+  >([]);
+  const [majorUpdatesLoading, setMajorUpdatesLoading] = useState(false);
+  const [majorUpdatesError, setMajorUpdatesError] = useState("");
+  const [majorUpdatesPage, setMajorUpdatesPage] = useState(0);
+  const [majorUpdatesProgress, setMajorUpdatesProgress] = useState(0);
+  const [patchNotesLoading, setPatchNotesLoading] = useState(false);
+  const MAJOR_UPDATES_PER_PAGE = 20;
 
   useEffect(() => {
     if (steamId) {
       fetchGames(steamId);
     }
-  }, []);
+  }, [steamId]);
 
   const toggleNote = (gid: string) => {
     setExpandedNotes((prev) => {
@@ -69,13 +80,21 @@ function App() {
       const res = await fetch(`/api/getGames?steamid=${id}`);
       const data = await res.json();
       if (data.response?.games) {
-        setGames(data.response.games);
+        console.log(
+          "Fetched games:",
+          data.response?.games ? data.response.games.length : 0
+        );
+        const filteredGames = data.response.games.filter(
+          (g: Game) => g.playtime_forever > 0
+        );
+        console.log("Fetched games after filter:", filteredGames.length);
+        setGames(filteredGames);
         localStorage.setItem("steamid", id);
       } else {
         setError("No games found or invalid Steam ID.");
       }
     } catch (err) {
-      setError("Failed to fetch games.");
+      setError("Failed to fetch games. Error; " + (err as Error).message);
     }
     setLoading(false);
   };
@@ -85,20 +104,164 @@ function App() {
     fetchGames(steamId);
   };
 
-  const fetchPatchNotes = async (appid: number): Promise<PatchNote[]> => {
+  const fetchPatchNotes = async (
+    appid: number,
+    amount_of_events = 3,
+    event_type_filter = "13,14"
+  ): Promise<PatchNote[]> => {
     try {
-      const res = await fetch(`/api/getPatchNotes?appid=${appid}`);
+      const res = await fetch(
+        `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}`
+      );
       const data = await res.json();
       return data.patchNotes || [];
-    } catch (err) {
-      console.error(`Failed to fetch patch note for appid ${appid}`);
-      return []; // ✅ return empty array, not null
+    } catch {
+      console.error(`Failed to fetch patch note for appid ${appid}.`);
+      return [];
     }
   };
 
+  // Min-heap implementation for top N most recent patch notes by posttime
+  class MinHeap {
+    heap: MajorUpdateNote[] = [];
+    maxSize: number;
+    constructor(maxSize: number) {
+      this.maxSize = maxSize;
+    }
+    push(note: MajorUpdateNote) {
+      if (this.heap.length < this.maxSize) {
+        this.heap.push(note);
+        this.bubbleUp(this.heap.length - 1);
+      } else if (this.compare(note, this.heap[0]) > 0) {
+        this.heap[0] = note;
+        this.bubbleDown(0);
+      }
+    }
+    compare(a: MajorUpdateNote, b: MajorUpdateNote) {
+      const at = a.announcement_body?.posttime || 0;
+      const bt = b.announcement_body?.posttime || 0;
+      return at - bt;
+    }
+    bubbleUp(idx: number) {
+      while (idx > 0) {
+        const parent = Math.floor((idx - 1) / 2);
+        if (this.compare(this.heap[idx], this.heap[parent]) < 0) {
+          [this.heap[idx], this.heap[parent]] = [
+            this.heap[parent],
+            this.heap[idx],
+          ];
+          idx = parent;
+        } else break;
+      }
+    }
+    bubbleDown(idx: number) {
+      const n = this.heap.length;
+      while (true) {
+        let smallest = idx;
+        const left = 2 * idx + 1;
+        const right = 2 * idx + 2;
+        if (left < n && this.compare(this.heap[left], this.heap[smallest]) < 0)
+          smallest = left;
+        if (
+          right < n &&
+          this.compare(this.heap[right], this.heap[smallest]) < 0
+        )
+          smallest = right;
+        if (smallest !== idx) {
+          [this.heap[idx], this.heap[smallest]] = [
+            this.heap[smallest],
+            this.heap[idx],
+          ];
+          idx = smallest;
+        } else break;
+      }
+    }
+    getSortedDesc(): MajorUpdateNote[] {
+      // Return sorted descending (newest first)
+      return [...this.heap].sort(
+        (a, b) =>
+          (b.announcement_body?.posttime || 0) -
+          (a.announcement_body?.posttime || 0)
+      );
+    }
+  }
+
+  // Helper to extract the imgur from jsondata
+  function getTitleImageFromJsonData(
+    jsondata: string | undefined,
+    clanid?: string | number
+  ): string | null {
+    if (!jsondata) return null;
+    try {
+      const obj = JSON.parse(jsondata);
+      // Try localized_title_image first
+      let arr = obj.localized_title_image;
+      if (Array.isArray(arr) && arr[0]) {
+        const hash = arr[0];
+        if (/^https?:\/\//.test(hash)) {
+          return hash;
+        }
+        // Steam CDN with subfolder (e.g. <clanid>/<hash>)
+        if (clanid && /^[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${clanid}/${hash}`;
+        }
+        if (/^[0-9]+\/[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+        }
+        // 40 hex chars, no folder, fallback to old logic
+        if (/^[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+        }
+        // 32 hex chars, Valve CDN
+        if (/^[a-f0-9]{32}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://media.steampowered.com/steamcommunity/public/images/clans/${hash}`;
+        }
+        // Imgur-style
+        if (/^[a-zA-Z0-9]+\.(png|jpg|jpeg|gif)$/i.test(hash)) {
+          return `https://i.imgur.com/${hash}`;
+        }
+        // Fallback: try Steam CDN
+        return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+      }
+      // If localized_title_image is empty, try localized_capsule_image
+      arr = obj.localized_capsule_image;
+      if (Array.isArray(arr) && arr[0]) {
+        const hash = arr[0];
+        if (/^https?:\/\//.test(hash)) {
+          return hash;
+        }
+        // Steam CDN with subfolder (e.g. <clanid>/<hash>)
+        if (clanid && /^[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${clanid}/${hash}`;
+        }
+        if (/^[0-9]+\/[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+        }
+        // 40 hex chars, no folder, fallback to old logic
+        if (/^[a-f0-9]{40}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+        }
+        // 32 hex chars, Valve CDN
+        if (/^[a-f0-9]{32}\.(png|jpg|jpeg)$/i.test(hash)) {
+          return `https://media.steampowered.com/steamcommunity/public/images/clans/${hash}`;
+        }
+        // Imgur-style
+        if (/^[a-zA-Z0-9]+\.(png|jpg|jpeg|gif)$/i.test(hash)) {
+          return `https://i.imgur.com/${hash}`;
+        }
+        // Fallback: try Steam CDN
+        return `https://clan.cloudflare.steamstatic.com/images/${hash}`;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
   const handlePatchTabClick = async () => {
     setActiveTab(2);
-    if (hasFetchedPatches || games.length === 0) return;
+    if (hasFetchedPatches || games.length === 0 || patchNotesLoading) return;
+    setPatchNotesLoading(true);
 
     const topGames = [...games]
       .sort((a, b) => b.playtime_forever - a.playtime_forever)
@@ -113,7 +276,36 @@ function App() {
 
     setPatchNotes(patched);
     setHasFetchedPatches(true);
+    setPatchNotesLoading(false);
     console.log("Patch notes fetched:", patched);
+  };
+
+  const handleMajorUpdatesTabClick = async () => {
+    setMajorUpdatesError("");
+    setMajorUpdatesLoading(true);
+    setMajorUpdatesProgress(0);
+    try {
+      const topGames = [...games];
+      const heap = new MinHeap(50); // Keep only top 50 most recent
+      let completed = 0;
+      await Promise.all(
+        topGames.map(async (game) => {
+          const notes = await fetchPatchNotes(game.appid, 3, "13,14");
+          notes.forEach((note) => {
+            if (note.announcement_body && note.announcement_body.posttime) {
+              heap.push({ ...note, gameName: game.name });
+              setRecentMajorUpdates(heap.getSortedDesc()); // Update results live
+            }
+          });
+          completed++;
+          setMajorUpdatesProgress(completed);
+        })
+      );
+      setRecentMajorUpdates(heap.getSortedDesc());
+    } catch {
+      setMajorUpdatesError("Failed to load major updates.");
+    }
+    setMajorUpdatesLoading(false);
   };
 
   return (
@@ -155,10 +347,27 @@ function App() {
             marginBottom: "1rem",
           }}
         >
-          <button onClick={() => setActiveTab(1)}>Games List</button>
-          <button onClick={handlePatchTabClick}>Patch Notes</button>
-          <button onClick={() => setActiveTab(3)}>Favorites (coming)</button>
+          <button
+            onClick={() => setActiveTab(1)}
+            disabled={games.length === 0 || loading}
+          >
+            Games List
+          </button>
+          <button
+            onClick={handlePatchTabClick}
+            disabled={games.length === 0 || loading || patchNotesLoading}
+          >
+            Patch Notes
+          </button>
+          <button
+            onClick={() => setActiveTab(3)}
+            disabled={games.length === 0 || loading}
+          >
+            Recent Major Updates
+          </button>
         </div>
+
+        {patchNotesLoading && <p>Loading patch notes...</p>}
 
         {activeTab === 1 && (
           <div>
@@ -207,27 +416,74 @@ function App() {
                   ) : (
                     <div className="space-y-4">
                       {game.patchNotes.map((note) => (
-                        <div
-                          key={note.gid}
-                          onClick={() => toggleNote(note.gid)}
-                          className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 cursor-pointer hover:bg-[#4b4d54] transition"
-                        >
-                          <h3 className="font-bold mb-1">{note.event_name}</h3>
-                          {!expandedNotes.has(note.gid) ? (
-                            <p className="text-sm italic text-gray-300">
-                              Click to expand
-                            </p>
-                          ) : (
+                        <div key={note.gid} className="mb-4">
+                          <div
+                            style={{
+                              position: "relative",
+                              textAlign: "center",
+                            }}
+                          >
                             <div
-                              className="text-sm"
-                              dangerouslySetInnerHTML={{
-                                __html: parseBBCode(
-                                  note.announcement_body?.body ||
-                                    "No body text."
-                                ),
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 2,
+                                pointerEvents: "none",
+                                color: "#fff",
+                                fontWeight: "bold",
+                                fontSize: "1.5rem",
+                                textShadow:
+                                  "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
                               }}
-                            />
-                          )}
+                            >
+                              {note.event_name}
+                            </div>
+                            {getTitleImageFromJsonData(
+                              note.jsondata,
+                              note.announcement_body?.clanid
+                            ) && (
+                              <img
+                                src={
+                                  getTitleImageFromJsonData(
+                                    note.jsondata,
+                                    note.announcement_body?.clanid
+                                  ) as string
+                                }
+                                alt="Patch Title"
+                                style={{
+                                  maxWidth: "100%",
+                                  margin: "1rem auto",
+                                  display: "block",
+                                }}
+                              />
+                            )}
+                          </div>
+                          <div
+                            onClick={() => toggleNote(note.gid)}
+                            className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 cursor-pointer hover:bg-[#4b4d54] transition"
+                          >
+                            {!expandedNotes.has(note.gid) ? (
+                              <p className="text-sm italic text-gray-300">
+                                Click to expand
+                              </p>
+                            ) : (
+                              <div
+                                className="text-sm"
+                                dangerouslySetInnerHTML={{
+                                  __html: parseBBCode(
+                                    note.announcement_body?.body ||
+                                      "No body text."
+                                  ),
+                                }}
+                              />
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -237,9 +493,170 @@ function App() {
             </div>
           </div>
         )}
+
         {activeTab === 3 && (
           <div>
-            <h2>Favorites (coming soon)</h2>
+            <h2>Recent Major Updates (All Games)</h2>
+            <button
+              onClick={handleMajorUpdatesTabClick}
+              disabled={majorUpdatesLoading}
+              style={{ marginBottom: 16 }}
+            >
+              Fetch patches
+            </button>
+            {majorUpdatesLoading && (
+              <p>
+                Loading... {majorUpdatesProgress} / {games.length} games
+              </p>
+            )}
+            {majorUpdatesError && (
+              <p style={{ color: "red" }}>{majorUpdatesError}</p>
+            )}
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                maxWidth: 600,
+                margin: "auto",
+                maxHeight: 700,
+                overflowY: "auto",
+                paddingLeft: 16,
+                paddingRight: 16,
+              }}
+            >
+              {recentMajorUpdates
+                .slice(
+                  majorUpdatesPage * MAJOR_UPDATES_PER_PAGE,
+                  (majorUpdatesPage + 1) * MAJOR_UPDATES_PER_PAGE
+                )
+                .map((note) => (
+                  <li
+                    key={note.gid}
+                    style={{
+                      padding: "1rem 0",
+                      borderBottom: "1px solid #ccc",
+                    }}
+                  >
+                    <div style={{ position: "relative", textAlign: "center" }}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 2,
+                          pointerEvents: "none",
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "1.5rem",
+                          textShadow:
+                            "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
+                        }}
+                      >
+                        {note.event_name}
+                      </div>
+                      {getTitleImageFromJsonData(
+                        note.jsondata,
+                        note.announcement_body?.clanid
+                      ) && (
+                        <img
+                          src={
+                            getTitleImageFromJsonData(
+                              note.jsondata,
+                              note.announcement_body?.clanid
+                            ) as string
+                          }
+                          alt="Patch Title"
+                          style={{
+                            maxWidth: "100%",
+                            margin: "1rem auto",
+                            display: "block",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <strong style={{ display: "none" }}>{note.gameName}</strong>
+                    <span style={{ color: "#888", display: "none" }}>
+                      {new Date(
+                        (note.rtime32_start_time || 0) * 1000
+                      ).toLocaleDateString()}
+                    </span>
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        margin: "0.5rem 0",
+                        display: "none",
+                      }}
+                    >
+                      {note.event_name}
+                    </div>
+                    <div
+                      onClick={() => toggleNote(note.gid)}
+                      className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 cursor-pointer hover:bg-[#4b4d54] transition"
+                    >
+                      {!expandedNotes.has(note.gid) ? (
+                        <p className="text-sm italic text-gray-300">
+                          Click to expand
+                        </p>
+                      ) : (
+                        <div
+                          className="text-sm"
+                          dangerouslySetInnerHTML={{
+                            __html: parseBBCode(
+                              note.announcement_body?.body ||
+                                note.event_notes ||
+                                ""
+                            ),
+                          }}
+                        />
+                      )}
+                    </div>
+                  </li>
+                ))}
+            </ul>
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => setMajorUpdatesPage((p) => Math.max(0, p - 1))}
+                disabled={majorUpdatesPage === 0}
+              >
+                Previous
+              </button>
+              <span>
+                Page {majorUpdatesPage + 1} /{" "}
+                {Math.ceil(
+                  recentMajorUpdates.length / MAJOR_UPDATES_PER_PAGE
+                ) || 1}
+              </span>
+              <button
+                onClick={() =>
+                  setMajorUpdatesPage((p) =>
+                    p + 1 <
+                    Math.ceil(
+                      recentMajorUpdates.length / MAJOR_UPDATES_PER_PAGE
+                    )
+                      ? p + 1
+                      : p
+                  )
+                }
+                disabled={
+                  majorUpdatesPage + 1 >=
+                  Math.ceil(recentMajorUpdates.length / MAJOR_UPDATES_PER_PAGE)
+                }
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

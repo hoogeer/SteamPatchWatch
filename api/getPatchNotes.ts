@@ -3,15 +3,22 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { appid } = req.query;
+  const { appid, pAmountOfEvents, event_type_filter } = req.query;
 
   if (!appid) {
     return res.status(400).json({ error: "Missing appid parameter" });
   }
 
+  // Default to 3 if not provided
+  const countAfter =
+    typeof pAmountOfEvents === "string" ? parseInt(pAmountOfEvents, 10) : 3;
+  // Default to 13,14 if not provided
+  const eventTypeFilter =
+    typeof event_type_filter === "string" ? event_type_filter : "13,14";
+
   try {
     const steamRes = await fetch(
-      `https://store.steampowered.com/events/ajaxgetadjacentpartnerevents/?appid=${appid}&count_before=0&count_after=2`
+      `https://store.steampowered.com/events/ajaxgetadjacentpartnerevents/?appid=${appid}&count_before=0&count_after=${countAfter}&event_type_filter=${eventTypeFilter}`
     );
     const data = await steamRes.json();
 
