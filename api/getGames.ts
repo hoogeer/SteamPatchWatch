@@ -12,11 +12,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const response = await fetch(
       `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${steamid}&include_appinfo=true`
     );
+    if (!response.ok) {
+      // Log the error response for debugging
+      const text = await response.text();
+      console.error("Steam API error response:", text);
+      return res
+        .status(502)
+        .json({ error: "Steam API returned error", details: text });
+    }
     const data = await response.json();
     res.status(200).json(data);
-  } catch (err) {
+  } catch (err: unknown) {
+    let message: string;
+    if (
+      err &&
+      typeof err === "object" &&
+      "message" in err &&
+      typeof (err as { message?: unknown }).message === "string"
+    ) {
+      message = (err as { message: string }).message;
+    } else {
+      message = String(err);
+    }
     res
       .status(500)
-      .json({ error: "Steam API request failed. Error: " + err.message });
+      .json({ error: "Steam API request failed.", details: message });
   }
 }

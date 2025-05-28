@@ -2,7 +2,6 @@
   "name": "steampatchwatch",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -16,8 +15,7 @@
     "@bbob/preset-react": "^4.2.0",
     "@bbob/react": "^4.2.0",
     "bbcodejs": "^0.0.4",
-    "express-session": "^1.18.1",
-    "openid-client": "^6.5.0",
+    "p-limit": "^6.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.7"

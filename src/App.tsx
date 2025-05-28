@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface Game {
   appid: number;
@@ -58,6 +58,7 @@ function App() {
   const [majorUpdatesProgress, setMajorUpdatesProgress] = useState(0);
   const [patchNotesLoading, setPatchNotesLoading] = useState(false);
   const MAJOR_UPDATES_PER_PAGE = 20;
+  const majorUpdatesListRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (steamId) {
@@ -94,7 +95,15 @@ function App() {
         setError("No games found or invalid Steam ID.");
       }
     } catch (err) {
-      setError("Failed to fetch games. Error; " + (err as Error).message);
+      const message =
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : String(err);
+      setError("Failed to fetch games. Error; " + message);
+      console.error("Error fetching games:", err);
     }
     setLoading(false);
   };
@@ -265,7 +274,7 @@ function App() {
 
     const topGames = [...games]
       .sort((a, b) => b.playtime_forever - a.playtime_forever)
-      .slice(0, 10);
+      .slice(0, 40);
 
     const patched = await Promise.all(
       topGames.map(async (game) => {
@@ -282,19 +291,24 @@ function App() {
 
   const handleMajorUpdatesTabClick = async () => {
     setMajorUpdatesError("");
+    setRecentMajorUpdates([]); // Clear the list immediately for visual refresh
     setMajorUpdatesLoading(true);
     setMajorUpdatesProgress(0);
     try {
       const topGames = [...games];
-      const heap = new MinHeap(50); // Keep only top 50 most recent
+      const heap = new MinHeap(100); // Keep only top 100 most recent
+      const seen = new Set<string>(); // Track by gid+appid
       let completed = 0;
       await Promise.all(
         topGames.map(async (game) => {
           const notes = await fetchPatchNotes(game.appid, 3, "13,14");
           notes.forEach((note) => {
             if (note.announcement_body && note.announcement_body.posttime) {
-              heap.push({ ...note, gameName: game.name });
-              setRecentMajorUpdates(heap.getSortedDesc()); // Update results live
+              const key = `${note.gid}_${note.appid}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                heap.push({ ...note, gameName: game.name });
+              }
             }
           });
           completed++;
@@ -399,7 +413,7 @@ function App() {
 
         {activeTab === 2 && (
           <div>
-            <h2>Latest Patch Notes (Top 10 Games)</h2>
+            <h2>Latest Patch Notes (Top 40 Played Games)</h2>
             <div
               style={{
                 maxWidth: "600px",
@@ -415,77 +429,110 @@ function App() {
                     <p className="text-gray-400">No patch notes found.</p>
                   ) : (
                     <div className="space-y-4">
-                      {game.patchNotes.map((note) => (
-                        <div key={note.gid} className="mb-4">
-                          <div
-                            style={{
-                              position: "relative",
-                              textAlign: "center",
-                            }}
-                          >
+                      {game.patchNotes.map((note) => {
+                        const patchDate = note.announcement_body?.posttime
+                          ? new Date(
+                              note.announcement_body.posttime * 1000
+                            ).toLocaleString()
+                          : note.rtime32_start_time
+                          ? new Date(
+                              note.rtime32_start_time * 1000
+                            ).toLocaleString()
+                          : null;
+                        const expanded = expandedNotes.has(note.gid);
+                        return (
+                          <div key={note.gid} className="mb-4">
                             <div
                               style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: "100%",
-                                height: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                zIndex: 2,
-                                pointerEvents: "none",
-                                color: "#fff",
-                                fontWeight: "bold",
-                                fontSize: "1.5rem",
-                                textShadow:
-                                  "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
+                                position: "relative",
+                                textAlign: "center",
+                                cursor: "pointer",
                               }}
+                              onClick={() => toggleNote(note.gid)}
+                              tabIndex={0}
+                              role="button"
+                              aria-pressed={expanded}
                             >
-                              {note.event_name}
+                              <div style={{ position: "relative" }}>
+                                {/* Event name overlay */}
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    zIndex: 2,
+                                    pointerEvents: "none",
+                                    color: "#fff",
+                                    fontWeight: "bold",
+                                    fontSize: "1.5rem",
+                                    textShadow:
+                                      "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
+                                  }}
+                                >
+                                  {note.event_name}
+                                </div>
+                                {getTitleImageFromJsonData(
+                                  note.jsondata,
+                                  note.announcement_body?.clanid
+                                ) && (
+                                  <img
+                                    src={
+                                      getTitleImageFromJsonData(
+                                        note.jsondata,
+                                        note.announcement_body?.clanid
+                                      ) as string
+                                    }
+                                    alt="Patch Title"
+                                    style={{
+                                      maxWidth: "100%",
+                                      margin: "1rem auto 0 auto",
+                                      display: "block",
+                                    }}
+                                  />
+                                )}
+                                {/* Date overlay at bottom of image */}
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    left: 0,
+                                    bottom: 0,
+                                    width: "100%",
+                                    background: "rgba(0,0,0,0.5)",
+                                    color: "#fff",
+                                    fontSize: "0.95rem",
+                                    padding: "2px 0",
+                                    zIndex: 3,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {patchDate}
+                                </div>
+                              </div>
                             </div>
-                            {getTitleImageFromJsonData(
-                              note.jsondata,
-                              note.announcement_body?.clanid
-                            ) && (
-                              <img
-                                src={
-                                  getTitleImageFromJsonData(
-                                    note.jsondata,
-                                    note.announcement_body?.clanid
-                                  ) as string
-                                }
-                                alt="Patch Title"
-                                style={{
-                                  maxWidth: "100%",
-                                  margin: "1rem auto",
-                                  display: "block",
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div
-                            onClick={() => toggleNote(note.gid)}
-                            className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 cursor-pointer hover:bg-[#4b4d54] transition"
-                          >
-                            {!expandedNotes.has(note.gid) ? (
-                              <p className="text-sm italic text-gray-300">
-                                Click to expand
-                              </p>
-                            ) : (
+                            {expanded && (
                               <div
-                                className="text-sm"
-                                dangerouslySetInnerHTML={{
-                                  __html: parseBBCode(
-                                    note.announcement_body?.body ||
-                                      "No body text."
-                                  ),
-                                }}
-                              />
+                                className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 transition"
+                                style={{ marginTop: 8 }}
+                              >
+                                <div
+                                  className="text-sm"
+                                  dangerouslySetInnerHTML={{
+                                    __html: parseBBCode(
+                                      note.announcement_body?.body ||
+                                        "No body text."
+                                    ),
+                                  }}
+                                />
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -513,15 +560,18 @@ function App() {
               <p style={{ color: "red" }}>{majorUpdatesError}</p>
             )}
             <ul
+              ref={majorUpdatesListRef}
               style={{
                 listStyle: "none",
                 padding: 0,
                 maxWidth: 600,
                 margin: "auto",
-                maxHeight: 700,
+                minHeight: 200,
+                maxHeight: 1000,
                 overflowY: "auto",
                 paddingLeft: 16,
                 paddingRight: 16,
+                resize: "vertical",
               }}
             >
               {recentMajorUpdates
@@ -529,94 +579,115 @@ function App() {
                   majorUpdatesPage * MAJOR_UPDATES_PER_PAGE,
                   (majorUpdatesPage + 1) * MAJOR_UPDATES_PER_PAGE
                 )
-                .map((note) => (
-                  <li
-                    key={note.gid}
-                    style={{
-                      padding: "1rem 0",
-                      borderBottom: "1px solid #ccc",
-                    }}
-                  >
-                    <div style={{ position: "relative", textAlign: "center" }}>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 2,
-                          pointerEvents: "none",
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: "1.5rem",
-                          textShadow:
-                            "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
-                        }}
-                      >
-                        {note.event_name}
-                      </div>
-                      {getTitleImageFromJsonData(
-                        note.jsondata,
-                        note.announcement_body?.clanid
-                      ) && (
-                        <img
-                          src={
-                            getTitleImageFromJsonData(
-                              note.jsondata,
-                              note.announcement_body?.clanid
-                            ) as string
-                          }
-                          alt="Patch Title"
-                          style={{
-                            maxWidth: "100%",
-                            margin: "1rem auto",
-                            display: "block",
-                          }}
-                        />
-                      )}
-                    </div>
-                    <strong style={{ display: "none" }}>{note.gameName}</strong>
-                    <span style={{ color: "#888", display: "none" }}>
-                      {new Date(
-                        (note.rtime32_start_time || 0) * 1000
-                      ).toLocaleDateString()}
-                    </span>
-                    <div
+                .map((note) => {
+                  const patchDate = note.announcement_body?.posttime
+                    ? new Date(
+                        note.announcement_body.posttime * 1000
+                      ).toLocaleString()
+                    : note.rtime32_start_time
+                    ? new Date(note.rtime32_start_time * 1000).toLocaleString()
+                    : null;
+                  const expanded = expandedNotes.has(note.gid);
+                  return (
+                    <li
+                      key={note.gid}
                       style={{
-                        fontWeight: "bold",
-                        margin: "0.5rem 0",
-                        display: "none",
+                        padding: "1rem 0",
+                        borderBottom: "1px solid #ccc",
                       }}
                     >
-                      {note.event_name}
-                    </div>
-                    <div
-                      onClick={() => toggleNote(note.gid)}
-                      className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 cursor-pointer hover:bg-[#4b4d54] transition"
-                    >
-                      {!expandedNotes.has(note.gid) ? (
-                        <p className="text-sm italic text-gray-300">
-                          Click to expand
-                        </p>
-                      ) : (
+                      <div
+                        style={{
+                          position: "relative",
+                          textAlign: "center",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => toggleNote(note.gid)}
+                        tabIndex={0}
+                        role="button"
+                        aria-pressed={expanded}
+                      >
+                        <div style={{ position: "relative" }}>
+                          {/* Event name overlay */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              zIndex: 2,
+                              pointerEvents: "none",
+                              color: "#fff",
+                              fontWeight: "bold",
+                              fontSize: "1.5rem",
+                              textShadow:
+                                "0 2px 8px #000, 0 0 2px #000, 0 0 8px #000",
+                            }}
+                          >
+                            {note.event_name}
+                          </div>
+                          {getTitleImageFromJsonData(
+                            note.jsondata,
+                            note.announcement_body?.clanid
+                          ) && (
+                            <img
+                              src={
+                                getTitleImageFromJsonData(
+                                  note.jsondata,
+                                  note.announcement_body?.clanid
+                                ) as string
+                              }
+                              alt="Patch Title"
+                              style={{
+                                maxWidth: "100%",
+                                margin: "1rem auto 0 auto",
+                                display: "block",
+                              }}
+                            />
+                          )}
+                          {/* Date overlay at bottom of image */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              bottom: 0,
+                              width: "100%",
+                              background: "rgba(0,0,0,0.5)",
+                              color: "#fff",
+                              fontSize: "0.95rem",
+                              padding: "2px 0",
+                              zIndex: 3,
+                              textAlign: "center",
+                            }}
+                          >
+                            {patchDate}
+                          </div>
+                        </div>
+                      </div>
+                      {expanded && (
                         <div
-                          className="text-sm"
-                          dangerouslySetInnerHTML={{
-                            __html: parseBBCode(
-                              note.announcement_body?.body ||
-                                note.event_notes ||
-                                ""
-                            ),
-                          }}
-                        />
+                          className="bg-[#3a3c42] text-white rounded-md p-4 shadow-sm border border-gray-600 transition"
+                          style={{ marginTop: 8 }}
+                        >
+                          <div
+                            className="text-sm"
+                            dangerouslySetInnerHTML={{
+                              __html: parseBBCode(
+                                note.announcement_body?.body ||
+                                  note.event_notes ||
+                                  "No body text."
+                              ),
+                            }}
+                          />
+                        </div>
                       )}
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
             </ul>
             <div
               style={{
@@ -627,7 +698,11 @@ function App() {
               }}
             >
               <button
-                onClick={() => setMajorUpdatesPage((p) => Math.max(0, p - 1))}
+                onClick={() => {
+                  setMajorUpdatesPage((p) => Math.max(0, p - 1));
+                  if (majorUpdatesListRef.current)
+                    majorUpdatesListRef.current.scrollTop = 0;
+                }}
                 disabled={majorUpdatesPage === 0}
               >
                 Previous
@@ -639,7 +714,7 @@ function App() {
                 ) || 1}
               </span>
               <button
-                onClick={() =>
+                onClick={() => {
                   setMajorUpdatesPage((p) =>
                     p + 1 <
                     Math.ceil(
@@ -647,8 +722,10 @@ function App() {
                     )
                       ? p + 1
                       : p
-                  )
-                }
+                  );
+                  if (majorUpdatesListRef.current)
+                    majorUpdatesListRef.current.scrollTop = 0;
+                }}
                 disabled={
                   majorUpdatesPage + 1 >=
                   Math.ceil(recentMajorUpdates.length / MAJOR_UPDATES_PER_PAGE)
