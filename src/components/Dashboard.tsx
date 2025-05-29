@@ -10,6 +10,7 @@ import { Gamepad2, Search, Settings, User, Key, AlertCircle, CheckCircle2 } from
 import SteamUserForm from './SteamUserForm';
 import GameLibrary from './GameLibrary';
 import PatchNotesPanel from './PatchNotesPanel';
+import RecentPatchFeed from './RecentPatchFeed';
 import { useToast } from '@/hooks/use-toast';
 
 interface SteamUser {
@@ -147,72 +148,77 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* User Profile & Games */}
+        {/* User Profile, Games, and Recent Updates */}
         {steamUser && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* User Profile */}
-            <div className="lg:col-span-1">
-              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm sticky top-4">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-white">
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                    <span>Connected Profile</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <img 
-                      src={steamUser.avatarfull} 
-                      alt={steamUser.personaname}
-                      className="w-16 h-16 rounded-full border-2 border-blue-500"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-white">{steamUser.personaname}</h3>
-                      <p className="text-sm text-slate-400">Steam Profile</p>
+          <>
+            {/* Recent Patch Feed - Full width at top */}
+            <RecentPatchFeed games={games} onGameSelect={setSelectedGame} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* User Profile */}
+              <div className="lg:col-span-1">
+                <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm sticky top-4">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2 text-white">
+                      <CheckCircle2 className="h-5 w-5 text-green-400" />
+                      <span>Connected Profile</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={steamUser.avatarfull} 
+                        alt={steamUser.personaname}
+                        className="w-16 h-16 rounded-full border-2 border-blue-500"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-white">{steamUser.personaname}</h3>
+                        <p className="text-sm text-slate-400">Steam Profile</p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Games Found:</span>
-                      <Badge variant="secondary" className="bg-blue-600/20 text-blue-400">
-                        {games.length}
-                      </Badge>
+                    
+                    <div className="pt-4 border-t border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Games Found:</span>
+                        <Badge variant="secondary" className="bg-blue-600/20 text-blue-400">
+                          {games.length}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-slate-400">Total Playtime:</span>
+                        <Badge variant="secondary" className="bg-purple-600/20 text-purple-400">
+                          {formatPlaytime(games.reduce((sum, game) => sum + game.playtime_forever, 0))}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-slate-400">Total Playtime:</span>
-                      <Badge variant="secondary" className="bg-purple-600/20 text-purple-400">
-                        {formatPlaytime(games.reduce((sum, game) => sum + game.playtime_forever, 0))}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full mt-4"
-                    onClick={() => {
-                      setSteamUser(null);
-                      setGames([]);
-                      setSelectedGame(null);
-                    }}
-                  >
-                    Disconnect
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full mt-4"
+                      onClick={() => {
+                        setSteamUser(null);
+                        setGames([]);
+                        setSelectedGame(null);
+                      }}
+                    >
+                      Disconnect
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Games Library */}
-            <div className="lg:col-span-2">
-              <GameLibrary 
-                games={games}
-                selectedGame={selectedGame}
-                onGameSelect={setSelectedGame}
-                formatPlaytime={formatPlaytime}
-              />
+              {/* Games Library */}
+              <div className="lg:col-span-2">
+                <GameLibrary 
+                  games={games}
+                  selectedGame={selectedGame}
+                  onGameSelect={setSelectedGame}
+                  formatPlaytime={formatPlaytime}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Patch Notes Panel */}
