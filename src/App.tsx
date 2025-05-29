@@ -57,13 +57,26 @@ function App() {
   const [majorUpdatesPage, setMajorUpdatesPage] = useState(0);
   const [majorUpdatesProgress, setMajorUpdatesProgress] = useState(0);
   const [patchNotesLoading, setPatchNotesLoading] = useState(false);
+  const [apiKey, setApiKey] = useState("");
   const MAJOR_UPDATES_PER_PAGE = 20;
   const majorUpdatesListRef = useRef<HTMLUListElement>(null);
 
+  // Helper: reset all relevant state
+  const resetAllState = () => {
+    setGames([]);
+    setPatchNotes([]);
+    setHasFetchedPatches(false);
+    setRecentMajorUpdates([]);
+    setMajorUpdatesPage(0);
+    setExpandedNotes(new Set());
+  };
+
   useEffect(() => {
     if (steamId) {
+      resetAllState();
       fetchGames(steamId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [steamId]);
 
   const toggleNote = (gid: string) => {
@@ -74,22 +87,65 @@ function App() {
     });
   };
 
+  // Helper: check if input is SteamID64 (17 digits, all numbers)
+  function isSteamId64(input: string) {
+    return /^\d{17}$/.test(input);
+  }
+
+  // Helper: resolve vanity URL to SteamID64 (now via backend proxy)
+  async function resolveVanityUrl(
+    username: string,
+    apiKey: string
+  ): Promise<string | null> {
+    try {
+      const url = apiKey
+        ? `/api/getSteamId?username=${encodeURIComponent(
+            username
+          )}&apiKey=${encodeURIComponent(apiKey)}`
+        : `/api/getSteamId?username=${encodeURIComponent(username)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.steamid) {
+        return data.steamid;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
   const fetchGames = async (id: string) => {
     setLoading(true);
     setError("");
+    let steamIdToUse = id;
+    // If not SteamID64, try to resolve vanity URL
+    if (!isSteamId64(id)) {
+      const resolved = await resolveVanityUrl(id, apiKey);
+      if (!resolved) {
+        setError(
+          "Could not resolve username to SteamID64. Please check your input."
+        );
+        setLoading(false);
+        return;
+      }
+      steamIdToUse = resolved;
+      setSteamId(resolved); // update state to resolved SteamID64
+    }
     try {
-      const res = await fetch(`/api/getGames?steamid=${id}`);
+      const url = apiKey
+        ? `/api/getGames?steamid=${steamIdToUse}&key=${encodeURIComponent(
+            apiKey
+          )}`
+        : `/api/getGames?steamid=${steamIdToUse}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (data.response?.games) {
         console.log(
           "Fetched games:",
           data.response?.games ? data.response.games.length : 0
         );
-        const filteredGames = data.response.games.filter(
-          (g: Game) => g.playtime_forever > 0
-        );
-        console.log("Fetched games after filter:", filteredGames.length);
-        setGames(filteredGames);
+        console.log("Fetched games after filter:", data.response.games.length);
+        setGames(data.response.games);
         localStorage.setItem("steamid", id);
       } else {
         setError("No games found or invalid Steam ID.");
@@ -110,7 +166,11 @@ function App() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchGames(steamId);
+    const form = e.target as HTMLFormElement;
+    const input = form.querySelector('input[type="text"]') as HTMLInputElement;
+    if (input && input.value !== steamId) setSteamId(input.value);
+    resetAllState();
+    fetchGames(input ? input.value : steamId);
   };
 
   const fetchPatchNotes = async (
@@ -119,9 +179,12 @@ function App() {
     event_type_filter = "13,14"
   ): Promise<PatchNote[]> => {
     try {
-      const res = await fetch(
-        `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}`
-      );
+      const url = apiKey
+        ? `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}&key=${encodeURIComponent(
+            apiKey
+          )}`
+        : `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}`;
+      const res = await fetch(url);
       const data = await res.json();
       return data.patchNotes || [];
     } catch {
@@ -267,6 +330,10 @@ function App() {
     return null;
   }
 
+  // Helper: check if all games have 0 playtime
+  const allGamesZeroPlaytime =
+    games.length > 0 && games.every((g) => g.playtime_forever === 0);
+
   const handlePatchTabClick = async () => {
     setActiveTab(2);
     if (hasFetchedPatches || games.length === 0 || patchNotesLoading) return;
@@ -333,20 +400,123 @@ function App() {
         style={{
           margin: "2rem auto",
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
           gap: "0.5rem",
+          maxWidth: 400,
         }}
       >
-        <input
-          type="text"
-          placeholder="Enter Steam ID"
-          value={steamId}
-          onChange={(e) => setSteamId(e.target.value)}
-          style={{ padding: "0.5rem", width: "250px" }}
-        />
-        <button type="submit" style={{ padding: "0.5rem 1rem" }}>
-          Fetch Games
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
+          <input
+            type="text"
+            placeholder="Enter Steam ID or VanityUrl"
+            defaultValue={steamId}
+            ref={(input) => {
+              if (input && steamId && input.value !== steamId)
+                input.value = steamId;
+            }}
+            style={{ padding: "0.5rem", width: "250px" }}
+          />
+          <button type="submit" style={{ padding: "0.5rem 1rem" }}>
+            Fetch Games
+          </button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="text"
+            placeholder="API Key (optional)"
+            style={{ padding: "0.5rem", width: "250px", marginTop: 4 }}
+            disabled={loading}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+          <span
+            style={{
+              display: "inline-block",
+              marginTop: 4,
+              cursor: "pointer",
+              position: "relative",
+            }}
+            tabIndex={0}
+            aria-label="API Key disclaimer"
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "#ffc107",
+                color: "#222",
+                fontWeight: "bold",
+                fontSize: "1.1rem",
+                textAlign: "center",
+                lineHeight: "20px",
+                border: "1px solid #e0a800",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                userSelect: "none",
+              }}
+            >
+              !
+            </span>
+            <span
+              style={{
+                visibility: "hidden",
+                opacity: 0,
+                transition: "opacity 0.2s",
+                position: "absolute",
+                left: "110%",
+                top: "-10px",
+                zIndex: 10,
+                background: "#222",
+                color: "#fff",
+                padding: "10px 14px",
+                borderRadius: 6,
+                fontSize: "0.95rem",
+                minWidth: 220,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                pointerEvents: "none",
+                border: "1px solid #444",
+                textAlign: "left",
+              }}
+              className="api-disclaimer-tooltip"
+            >
+              API Key is required to access private data due to privacy
+              settings, this is only to access read-only data such as total
+              playtime on games.
+              <br />
+              <br />
+              <a
+                href="https://steamcommunity.com/dev/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "#ffc107",
+                  textDecoration: "underline",
+                  fontWeight: 500,
+                }}
+              >
+                Get your Steam API Key
+              </a>
+            </span>
+            <style>{`
+              .api-disclaimer-tooltip {
+                pointer-events: none;
+              }
+              span[aria-label='API Key disclaimer']:hover .api-disclaimer-tooltip,
+              span[aria-label='API Key disclaimer']:focus .api-disclaimer-tooltip {
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+              }
+            `}</style>
+          </span>
+        </div>
+        {allGamesZeroPlaytime && (
+          <p style={{ color: "#d9534f", marginTop: 8, fontWeight: 500 }}>
+            Unable to get playtime data, functionalities limited
+          </p>
+        )}
       </form>
 
       {loading && <p>Loading...</p>}
@@ -369,7 +539,12 @@ function App() {
           </button>
           <button
             onClick={handlePatchTabClick}
-            disabled={games.length === 0 || loading || patchNotesLoading}
+            disabled={
+              games.length === 0 ||
+              loading ||
+              patchNotesLoading ||
+              allGamesZeroPlaytime
+            }
           >
             Patch Notes
           </button>
