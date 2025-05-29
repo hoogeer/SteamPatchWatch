@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,14 +30,16 @@ interface RecentPatchNote {
   type: 'major' | 'minor' | 'hotfix' | 'content';
   summary: string;
   size?: string;
+  fullContent?: string;
 }
 
 interface RecentPatchFeedProps {
   games: GameData[];
   onGameSelect: (game: GameData) => void;
+  onPatchSelect: (patchNote: RecentPatchNote) => void;
 }
 
-const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }) => {
+const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, onPatchSelect }) => {
   const [recentPatches, setRecentPatches] = useState<RecentPatchNote[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +63,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
           version: '2.4.0',
           type: 'major',
           summary: 'New winter maps, weapon balancing, and performance improvements.',
-          size: '2.3 GB'
+          size: '2.3 GB',
+          fullContent: `# Winter Update 2024\n\n## New Maps\n- de_winter: A snowy variant of the classic map\n- Winter collection featuring festive themes\n\n## Weapon Balancing\n- AK-47: Reduced recoil by 5%\n- M4A4: Increased damage falloff\n- AWP: Adjusted scope-in time\n\n## Performance Improvements\n- Optimized rendering for winter effects\n- Reduced memory usage by 15%\n- Fixed several crash issues`
         },
         {
           id: 'dota-content-1',
@@ -74,7 +76,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
           version: '7.37',
           type: 'major',
           summary: 'Introducing Kez, the latest hero with unique dual-weapon mechanics.',
-          size: '1.1 GB'
+          size: '1.1 GB',
+          fullContent: `# New Hero: Kez\n\n## Hero Overview\nKez is a versatile melee hero who can switch between two weapon modes:\n\n### Katana Mode\n- High mobility and burst damage\n- Perfect for initiation and escape\n\n### Sai Mode\n- Defensive capabilities and sustain\n- Ideal for team fights and protection\n\n## Abilities\n1. **Falcon Rush** - Dash forward dealing damage\n2. **Echo Slam** - AoE disable in both modes\n3. **Kazurai Katana** - Weapon mastery passive\n4. **Shodo Sai** - Defensive stance ultimate`
         },
         {
           id: 'apex-major-1',
@@ -86,7 +89,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
           version: '19.0.0',
           type: 'major',
           summary: 'New legend Conduit, map updates to Kings Canyon, and ranked changes.',
-          size: '8.2 GB'
+          size: '8.2 GB',
+          fullContent: `# Season 19: Ignite\n\n## New Legend: Conduit\n**Tactical:** Energy Barricade - Deploy an energy wall\n**Passive:** Savvy - Scan nearby enemies through walls\n**Ultimate:** Arc Flash - Team-wide speed and shield boost\n\n## Kings Canyon Updates\n- Reworked Artillery area\n- New rotation paths\n- Updated loot distribution\n\n## Ranked Changes\n- New tier: Apex Predator Master\n- Adjusted RP requirements\n- Improved matchmaking algorithms`
         },
         {
           id: 'gta-hotfix-1',
@@ -98,7 +102,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
           version: '1.67.1',
           type: 'hotfix',
           summary: 'Security improvements and bug fixes for GTA Online.',
-          size: '245 MB'
+          size: '245 MB',
+          fullContent: `# GTA Online Security Update\n\n## Security Improvements\n- Enhanced anti-cheat measures\n- Improved player reporting system\n- Fixed exploits in several missions\n\n## Bug Fixes\n- Resolved connection issues in public lobbies\n- Fixed vehicle duplication glitch\n- Corrected payout calculations for heists\n\n## Stability\n- Reduced crash frequency by 30%\n- Improved server stability during peak hours`
         },
         {
           id: 'cs2-hotfix-1',
@@ -110,7 +115,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
           version: '2.3.2',
           type: 'hotfix',
           summary: 'Quick fixes for gameplay balance issues reported by the community.',
-          size: '150 MB'
+          size: '150 MB',
+          fullContent: `# Balance Hotfix\n\n## Weapon Adjustments\n- Desert Eagle: Reduced one-shot headshot range\n- Galil AR: Slightly increased accuracy\n- Zeus: Fixed animation bug\n\n## Map Fixes\n- Mirage: Fixed pixel walk spots\n- Inferno: Adjusted smoke lineups\n- Dust2: Corrected collision issues\n\n## Gameplay\n- Fixed bomb defuse kit pickup bug\n- Improved server tick rate consistency\n- Resolved spectator mode issues`
         }
       ];
       
@@ -163,11 +169,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
     return `https://media.steampowered.com/steamcommunity/public/images/apps/${appid}/${iconHash}.jpg`;
   };
 
-  const handleGameClick = (patch: RecentPatchNote) => {
-    const game = games.find(g => g.appid === patch.gameAppId);
-    if (game) {
-      onGameSelect(game);
-    }
+  const handlePatchClick = (patch: RecentPatchNote) => {
+    onPatchSelect(patch);
   };
 
   if (games.length === 0) {
@@ -205,7 +208,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
               <Card 
                 key={patch.id}
                 className="bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-slate-500 transition-all duration-200 cursor-pointer"
-                onClick={() => handleGameClick(patch)}
+                onClick={() => handlePatchClick(patch)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-3">
@@ -262,7 +265,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect }
         {recentPatches.length > 0 && (
           <div className="mt-4 pt-4 border-t border-slate-600">
             <p className="text-xs text-slate-400 text-center">
-              Click on any update to view detailed patch notes for that game
+              Click on any update to view the detailed patch notes
             </p>
           </div>
         )}

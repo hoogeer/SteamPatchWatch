@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import SteamUserForm from './SteamUserForm';
 import GameLibrary from './GameLibrary';
 import PatchNotesPanel from './PatchNotesPanel';
 import RecentPatchFeed from './RecentPatchFeed';
+import SpecificPatchNoteModal from './SpecificPatchNoteModal';
 import { useToast } from '@/hooks/use-toast';
 
 interface SteamUser {
@@ -28,10 +28,25 @@ interface GameData {
   has_community_visible_stats?: boolean;
 }
 
+interface RecentPatchNote {
+  id: string;
+  gameAppId: number;
+  gameName: string;
+  gameIcon: string;
+  title: string;
+  date: string;
+  version: string;
+  type: 'major' | 'minor' | 'hotfix' | 'content';
+  summary: string;
+  size?: string;
+  fullContent?: string;
+}
+
 const Dashboard = () => {
   const [steamUser, setSteamUser] = useState<SteamUser | null>(null);
   const [games, setGames] = useState<GameData[]>([]);
   const [selectedGame, setSelectedGame] = useState<GameData | null>(null);
+  const [selectedPatchNote, setSelectedPatchNote] = useState<RecentPatchNote | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -152,7 +167,11 @@ const Dashboard = () => {
         {steamUser && (
           <>
             {/* Recent Patch Feed - Full width at top */}
-            <RecentPatchFeed games={games} onGameSelect={setSelectedGame} />
+            <RecentPatchFeed 
+              games={games} 
+              onGameSelect={setSelectedGame}
+              onPatchSelect={setSelectedPatchNote}
+            />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* User Profile */}
@@ -200,6 +219,7 @@ const Dashboard = () => {
                         setSteamUser(null);
                         setGames([]);
                         setSelectedGame(null);
+                        setSelectedPatchNote(null);
                       }}
                     >
                       Disconnect
@@ -226,6 +246,14 @@ const Dashboard = () => {
           <PatchNotesPanel 
             game={selectedGame}
             onClose={() => setSelectedGame(null)}
+          />
+        )}
+
+        {/* Specific Patch Note Modal */}
+        {selectedPatchNote && (
+          <SpecificPatchNoteModal 
+            patchNote={selectedPatchNote}
+            onClose={() => setSelectedPatchNote(null)}
           />
         )}
       </div>
