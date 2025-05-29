@@ -1,7 +1,6 @@
-// /api/getPatchNotes.ts
-
 import { VercelRequest, VercelResponse } from "@vercel/node";
 
+// This API endpoint fetches patch notes for a specific Steam game.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { appid, pAmountOfEvents, event_type_filter } = req.query;
 
@@ -9,10 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Missing appid parameter" });
   }
 
-  // Default to 3 if not provided
   const countAfter =
     typeof pAmountOfEvents === "string" ? parseInt(pAmountOfEvents, 10) : 3;
-  // Default to 13,14 if not provided
   const eventTypeFilter =
     typeof event_type_filter === "string" ? event_type_filter : "13,14";
 

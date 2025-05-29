@@ -1,14 +1,6 @@
-// Proxy endpoint to resolve a Steam vanity username to SteamID64 using the Steam Web API
-// Accepts: ?username=USERNAME&key=APIKEY (key optional)
-// Returns: { steamid: string } or { error: string }
-
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-/**
- * API route to resolve a Steam vanity username to SteamID64, proxying the Steam API to avoid CORS issues.
- * Accepts: GET /api/getSteamId?username=USERNAME&apiKey=STEAM_API_KEY (apiKey optional)
- * Returns: { steamid: string } or { error: string }
- */
+// This API endpoint resolves a Steam vanity URL to a SteamID64.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const username = req.query.username as string;
   const apiKey = (req.query.apiKey as string) || process.env.STEAM_API_KEY;

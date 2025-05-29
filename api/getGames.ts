@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+// This API endpoints gets a list of games owned by a Steam user.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const steamid = req.query.steamid as string;
   const apiKeyParam = req.query.key as string | undefined;
@@ -14,7 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${steamid}&include_appinfo=true`
     );
     if (!response.ok) {
-      // Log the error response for debugging
       const text = await response.text();
       console.error("Steam API error response:", text);
       return res

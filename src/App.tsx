@@ -16,7 +16,7 @@ interface PatchNote {
   rtime32_end_time: number;
   event_type: number;
   event_notes: string;
-  jsondata: string; // raw JSON string, parse if needed
+  jsondata: string;
   announcement_body?: {
     gid: string;
     headline: string;
@@ -193,7 +193,7 @@ function App() {
     }
   };
 
-  // Min-heap implementation for top N most recent patch notes by posttime
+  // Min-heap implementation for efficiently storing recent major updates
   class MinHeap {
     heap: MajorUpdateNote[] = [];
     maxSize: number;
@@ -357,14 +357,15 @@ function App() {
   };
 
   const handleMajorUpdatesTabClick = async () => {
+    //Clean up previous state
     setMajorUpdatesError("");
-    setRecentMajorUpdates([]); // Clear the list immediately for visual refresh
+    setRecentMajorUpdates([]);
     setMajorUpdatesLoading(true);
     setMajorUpdatesProgress(0);
     try {
       const topGames = [...games];
       const heap = new MinHeap(100); // Keep only top 100 most recent
-      const seen = new Set<string>(); // Track by gid+appid
+      const seen = new Set<string>();
       let completed = 0;
       await Promise.all(
         topGames.map(async (game) => {
