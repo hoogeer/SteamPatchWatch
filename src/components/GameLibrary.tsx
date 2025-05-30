@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Clock, Star, TrendingUp } from 'lucide-react';
+import { Search, Clock, Star, TrendingUp, Zap, GamepadIcon } from 'lucide-react';
 
 interface GameData {
   appid: number;
@@ -40,43 +39,67 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
 
   const getPlaytimeCategory = (minutes: number) => {
     const hours = minutes / 60;
-    if (hours >= 1000) return { label: 'Veteran', color: 'bg-purple-600/20 text-purple-400', icon: Star };
-    if (hours >= 500) return { label: 'Expert', color: 'bg-blue-600/20 text-blue-400', icon: TrendingUp };
-    if (hours >= 100) return { label: 'Experienced', color: 'bg-green-600/20 text-green-400', icon: Clock };
-    return { label: 'Casual', color: 'bg-gray-600/20 text-gray-400', icon: Clock };
+    if (hours >= 1000) return { 
+      label: 'Legendary', 
+      color: 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white', 
+      icon: Star,
+      glow: 'shadow-lg shadow-yellow-500/50'
+    };
+    if (hours >= 500) return { 
+      label: 'Master', 
+      color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white', 
+      icon: TrendingUp,
+      glow: 'shadow-lg shadow-purple-500/50'
+    };
+    if (hours >= 100) return { 
+      label: 'Expert', 
+      color: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white', 
+      icon: Zap,
+      glow: 'shadow-lg shadow-blue-500/50'
+    };
+    return { 
+      label: 'Casual', 
+      color: 'bg-gradient-to-r from-green-500 to-teal-500 text-white', 
+      icon: Clock,
+      glow: 'shadow-lg shadow-green-500/50'
+    };
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+    <Card className="glass-effect border-blue-400/30 backdrop-blur-xl slide-in">
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-white">
-          <span className="flex items-center space-x-2">
-            <Search className="h-5 w-5" />
-            <span>Your Game Library</span>
+          <span className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+              <GamepadIcon className="h-6 w-6" />
+            </div>
+            <span className="text-2xl font-bold">Game Arsenal</span>
           </span>
-          <Badge variant="secondary" className="bg-blue-600/20 text-blue-400">
-            {filteredGames.length} games
+          <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 text-lg font-bold">
+            {filteredGames.length}
           </Badge>
         </CardTitle>
         
         {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative mt-4">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-400" />
           <Input
-            placeholder="Search your games..."
+            placeholder="Search your gaming library..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-500"
+            className="pl-12 glass-effect border-cyan-400/50 text-white placeholder:text-gray-400 focus:border-cyan-400 text-lg py-3"
           />
         </div>
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-4 max-h-96 overflow-y-auto">
           {filteredGames.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No games found matching "{searchTerm}"</p>
+            <div className="text-center py-12">
+              <div className="p-6 glass-effect rounded-2xl">
+                <Search className="h-16 w-16 mx-auto mb-6 text-cyan-400 opacity-50" />
+                <p className="text-gray-300 text-xl">No games found matching "{searchTerm}"</p>
+              </div>
             </div>
           ) : (
             filteredGames.map((game) => {
@@ -85,72 +108,75 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
               const isSelected = selectedGame?.appid === game.appid;
               
               return (
-                <Card 
-                  key={game.appid}
-                  className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] slide-in ${
-                    isSelected 
-                      ? 'bg-blue-600/20 border-blue-500 shadow-lg shadow-blue-500/20' 
-                      : 'bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-slate-500'
-                  }`}
-                  onClick={() => onGameSelect(game)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
-                      {/* Game Icon */}
-                      <div className="relative">
-                        <img
-                          src={getGameIconUrl(game.appid, game.img_icon_url)}
-                          alt={game.name}
-                          className="w-12 h-12 rounded-lg object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                        {isSelected && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                <div key={game.appid} className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-2xl blur-lg"></div>
+                  <Card 
+                    className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] slide-in ${
+                      isSelected 
+                        ? 'glass-effect border-cyan-400 shadow-xl shadow-cyan-500/30 neon-glow' 
+                        : 'glass-effect border-purple-400/30 hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-500/20'
+                    }`}
+                    onClick={() => onGameSelect(game)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-6">
+                        {/* Game Icon */}
+                        <div className="relative">
+                          <img
+                            src={getGameIconUrl(game.appid, game.img_icon_url)}
+                            alt={game.name}
+                            className="w-16 h-16 rounded-xl object-cover border-2 border-cyan-400/50"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                          {isSelected && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center neon-glow">
+                              <div className="w-3 h-3 bg-white rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Game Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-white truncate text-lg">{game.name}</h3>
+                          <div className="flex items-center space-x-3 mt-2">
+                            <Badge className={`${category.color} ${category.glow} px-3 py-1 font-bold`}>
+                              <CategoryIcon className="h-4 w-4 mr-2" />
+                              {category.label}
+                            </Badge>
+                            <span className="text-cyan-300 font-medium">
+                              {formatPlaytime(game.playtime_forever)}
+                            </span>
                           </div>
+                        </div>
+
+                        {/* Stats Badge */}
+                        {game.has_community_visible_stats && (
+                          <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-3 py-1 font-bold">
+                            <Star className="h-3 w-3 mr-1" />
+                            Stats
+                          </Badge>
                         )}
                       </div>
-
-                      {/* Game Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white truncate">{game.name}</h3>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge className={category.color} variant="secondary">
-                            <CategoryIcon className="h-3 w-3 mr-1" />
-                            {category.label}
-                          </Badge>
-                          <span className="text-sm text-slate-400">
-                            {formatPlaytime(game.playtime_forever)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Stats Badge */}
-                      {game.has_community_visible_stats && (
-                        <Badge variant="outline" className="border-green-500/50 text-green-400">
-                          Stats
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               );
             })
           )}
         </div>
 
         {selectedGame && (
-          <div className="mt-4 p-4 bg-blue-600/10 border border-blue-500/30 rounded-lg">
-            <div className="flex items-center space-x-2 text-blue-400">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                Selected: {selectedGame.name}
+          <div className="mt-6 p-6 glass-effect border border-cyan-400/50 rounded-2xl">
+            <div className="flex items-center space-x-3 text-cyan-300">
+              <TrendingUp className="h-5 w-5" />
+              <span className="font-bold text-lg">
+                Active Selection: {selectedGame.name}
               </span>
             </div>
-            <p className="text-sm text-slate-400 mt-1">
-              Click below to view patch notes and updates for this game
+            <p className="text-gray-300 mt-2">
+              Ready to explore patch notes and updates for this epic title
             </p>
           </div>
         )}

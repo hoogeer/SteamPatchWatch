@@ -44,11 +44,12 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Gaming theme colors */
-    --steam-blue: 107 78% 43%;
-    --steam-dark: 224 14% 16%;
-    --steam-gray: 240 4% 17%;
-    --gaming-accent: 271 81% 56%;
+    /* Alternative theme colors */
+    --neon-cyan: 180 100% 50%;
+    --deep-purple: 260 50% 15%;
+    --electric-blue: 210 100% 55%;
+    --sunset-orange: 25 100% 60%;
+    --mint-green: 160 60% 50%;
   }
 
   .dark {
@@ -96,36 +97,72 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen;
+    @apply bg-gradient-to-br from-indigo-950 via-purple-900 to-cyan-900 text-white min-h-screen;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 }
 
-/* Gaming-specific animations */
-@keyframes pulse-glow {
+/* Alternative gaming animations */
+@keyframes neon-glow {
   0%, 100% {
-    box-shadow: 0 0 5px hsl(var(--steam-blue)), 0 0 10px hsl(var(--steam-blue)), 0 0 15px hsl(var(--steam-blue));
+    box-shadow: 0 0 5px hsl(var(--neon-cyan)), 0 0 15px hsl(var(--neon-cyan)), 0 0 25px hsl(var(--neon-cyan));
   }
   50% {
-    box-shadow: 0 0 10px hsl(var(--steam-blue)), 0 0 20px hsl(var(--steam-blue)), 0 0 30px hsl(var(--steam-blue));
+    box-shadow: 0 0 10px hsl(var(--neon-cyan)), 0 0 25px hsl(var(--neon-cyan)), 0 0 40px hsl(var(--neon-cyan));
   }
+}
+
+@keyframes float-animation {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.neon-glow {
+  animation: neon-glow 3s ease-in-out infinite;
+}
+
+.float-animation {
+  animation: float-animation 3s ease-in-out infinite;
+}
+
+.gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.slide-in {
+  animation: slide-in-from-bottom 0.4s ease-out;
 }
 
 @keyframes slide-in-from-bottom {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.steam-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.slide-in {
-  animation: slide-in-from-bottom 0.3s ease-out;
 }

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Gamepad2, Search, Settings, User, Key, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Gamepad2, Search, Settings, User, Key, AlertCircle, CheckCircle2, Zap, Star } from 'lucide-react';
 import SteamUserForm from './SteamUserForm';
 import GameLibrary from './GameLibrary';
 import PatchNotesPanel from './PatchNotesPanel';
@@ -125,117 +125,146 @@ const Dashboard = () => {
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
-              <Gamepad2 className="h-8 w-8 text-white" />
+        <div className="text-center space-y-6">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="p-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl neon-glow float-animation">
+              <Gamepad2 className="h-10 w-10 text-white" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent gradient-shift">
               SteamPatchWatch
             </h1>
           </div>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-            Track patch notes and major updates for your Steam games. Stay updated with the latest changes to your favorite titles.
-          </p>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl"></div>
+            <p className="relative text-xl text-gray-200 max-w-3xl mx-auto p-6 glass-effect rounded-2xl">
+              Experience the next generation of patch tracking. Monitor updates for your Steam games with our sleek, modern interface featuring real-time notifications and detailed patch analysis.
+            </p>
+          </div>
         </div>
 
         {/* Steam User Form */}
         {!steamUser && (
-          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-white">
-                <User className="h-5 w-5" />
-                <span>Connect Your Steam Account</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SteamUserForm onSubmit={handleUserSubmit} loading={loading} />
-              
-              {error && (
-                <Alert className="mt-4 border-red-500/50 bg-red-500/10">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-red-400">
-                    {error}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+            <Card className="relative glass-effect border-purple-500/30 backdrop-blur-xl slide-in">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-3 text-white">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <span className="text-2xl font-bold">Connect Your Steam Universe</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SteamUserForm onSubmit={handleUserSubmit} loading={loading} />
+                
+                {error && (
+                  <Alert className="mt-4 border-red-400/50 bg-red-500/10 glass-effect">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-red-300">
+                      {error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* User Profile, Games, and Recent Updates */}
         {steamUser && (
           <>
             {/* Recent Patch Feed - Full width at top */}
-            <RecentPatchFeed 
-              games={games} 
-              onGameSelect={setSelectedGame}
-              onPatchSelect={setSelectedPatchNote}
-            />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+              <div className="relative">
+                <RecentPatchFeed 
+                  games={games} 
+                  onGameSelect={setSelectedGame}
+                  onPatchSelect={setSelectedPatchNote}
+                />
+              </div>
+            </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* User Profile */}
               <div className="lg:col-span-1">
-                <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm sticky top-4">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-white">
-                      <CheckCircle2 className="h-5 w-5 text-green-400" />
-                      <span>Connected Profile</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={steamUser.avatarfull} 
-                        alt={steamUser.personaname}
-                        className="w-16 h-16 rounded-full border-2 border-blue-500"
-                      />
-                      <div>
-                        <h3 className="font-semibold text-white">{steamUser.personaname}</h3>
-                        <p className="text-sm text-slate-400">Steam Profile</p>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
+                  <Card className="relative glass-effect border-green-400/30 backdrop-blur-xl sticky top-4 slide-in">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-3 text-white">
+                        <div className="p-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <span className="text-xl font-bold">Gaming Profile</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="relative">
+                          <img 
+                            src={steamUser.avatarfull} 
+                            alt={steamUser.personaname}
+                            className="w-20 h-20 rounded-full border-4 border-gradient-to-r from-cyan-400 to-purple-400 neon-glow"
+                          />
+                          <div className="absolute -bottom-2 -right-2 p-1 bg-gradient-to-r from-green-400 to-blue-400 rounded-full">
+                            <Star className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-xl text-white">{steamUser.personaname}</h3>
+                          <p className="text-cyan-300 font-medium">Elite Gamer</p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-slate-700">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Games Found:</span>
-                        <Badge variant="secondary" className="bg-blue-600/20 text-blue-400">
-                          {games.length}
-                        </Badge>
+                      
+                      <div className="space-y-4 pt-4 border-t border-purple-500/30">
+                        <div className="flex items-center justify-between p-3 glass-effect rounded-xl">
+                          <span className="text-gray-300 font-medium">Games Library:</span>
+                          <Badge className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-3 py-1 font-bold">
+                            {games.length}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 glass-effect rounded-xl">
+                          <span className="text-gray-300 font-medium">Total Hours:</span>
+                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 font-bold">
+                            {formatPlaytime(games.reduce((sum, game) => sum + game.playtime_forever, 0))}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-slate-400">Total Playtime:</span>
-                        <Badge variant="secondary" className="bg-purple-600/20 text-purple-400">
-                          {formatPlaytime(games.reduce((sum, game) => sum + game.playtime_forever, 0))}
-                        </Badge>
-                      </div>
-                    </div>
 
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full mt-4"
-                      onClick={() => {
-                        setSteamUser(null);
-                        setGames([]);
-                        setSelectedGame(null);
-                        setSelectedPatchNote(null);
-                      }}
-                    >
-                      Disconnect
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-6 glass-effect border-red-400/50 text-red-300 hover:bg-red-500/20 font-medium"
+                        onClick={() => {
+                          setSteamUser(null);
+                          setGames([]);
+                          setSelectedGame(null);
+                          setSelectedPatchNote(null);
+                        }}
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Disconnect
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
               {/* Games Library */}
               <div className="lg:col-span-2">
-                <GameLibrary 
-                  games={games}
-                  selectedGame={selectedGame}
-                  onGameSelect={setSelectedGame}
-                  formatPlaytime={formatPlaytime}
-                />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+                  <div className="relative">
+                    <GameLibrary 
+                      games={games}
+                      selectedGame={selectedGame}
+                      onGameSelect={setSelectedGame}
+                      formatPlaytime={formatPlaytime}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </>
