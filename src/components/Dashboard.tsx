@@ -171,7 +171,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* User Profile, Games, and Recent Updates */}
+        {/* User Connected Content */}
         {steamUser && (
           <>
             {/* Recent Patch Feed - Full width at top */}
@@ -186,86 +186,35 @@ const Dashboard = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* User Profile */}
-              <div className="lg:col-span-1">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
-                  <Card className="relative glass-effect border-green-400/30 backdrop-blur-xl sticky top-4 slide-in">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-3 text-white">
-                        <div className="p-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
-                          <CheckCircle2 className="h-5 w-5" />
-                        </div>
-                        <span className="text-xl font-bold">Gaming Profile</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="flex items-center space-x-4">
-                        <div className="relative">
-                          <img 
-                            src={steamUser.avatarfull} 
-                            alt={steamUser.personaname}
-                            className="w-20 h-20 rounded-full border-4 border-gradient-to-r from-cyan-400 to-purple-400 neon-glow"
-                          />
-                          <div className="absolute -bottom-2 -right-2 p-1 bg-gradient-to-r from-green-400 to-blue-400 rounded-full">
-                            <Star className="h-4 w-4 text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-xl text-white">{steamUser.personaname}</h3>
-                          <p className="text-cyan-300 font-medium">Elite Gamer</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4 pt-4 border-t border-purple-500/30">
-                        <div className="flex items-center justify-between p-3 glass-effect rounded-xl">
-                          <span className="text-gray-300 font-medium">Games Library:</span>
-                          <Badge className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-3 py-1 font-bold">
-                            {games.length}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 glass-effect rounded-xl">
-                          <span className="text-gray-300 font-medium">Total Hours:</span>
-                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 font-bold">
-                            {formatPlaytime(games.reduce((sum, game) => sum + game.playtime_forever, 0))}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-6 glass-effect border-red-400/50 text-red-300 hover:bg-red-500/20 font-medium"
-                        onClick={() => {
-                          setSteamUser(null);
-                          setGames([]);
-                          setSelectedGame(null);
-                          setSelectedPatchNote(null);
-                        }}
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Disconnect
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
+            {/* Games Library - Full width */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+              <div className="relative">
+                <GameLibrary 
+                  games={games}
+                  selectedGame={selectedGame}
+                  onGameSelect={setSelectedGame}
+                  formatPlaytime={formatPlaytime}
+                />
               </div>
+            </div>
 
-              {/* Games Library */}
-              <div className="lg:col-span-2">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
-                  <div className="relative">
-                    <GameLibrary 
-                      games={games}
-                      selectedGame={selectedGame}
-                      onGameSelect={setSelectedGame}
-                      formatPlaytime={formatPlaytime}
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* Disconnect Button */}
+            <div className="flex justify-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="glass-effect border-red-400/50 text-red-300 hover:bg-red-500/20 font-medium"
+                onClick={() => {
+                  setSteamUser(null);
+                  setGames([]);
+                  setSelectedGame(null);
+                  setSelectedPatchNote(null);
+                }}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
             </div>
           </>
         )}
