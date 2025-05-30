@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Gamepad2, Search, Settings, User, Key, AlertCircle, CheckCircle2, Zap, Star } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Gamepad2, Search, Settings, User, Key, AlertCircle, CheckCircle2, Zap, Star, Home, Library, TrendingUp } from 'lucide-react';
 import SteamUserForm from './SteamUserForm';
 import GameLibrary from './GameLibrary';
 import PatchNotesPanel from './PatchNotesPanel';
@@ -121,6 +122,14 @@ const Dashboard = () => {
     return `${hours.toLocaleString()} hours`;
   };
 
+  const handleGoHome = () => {
+    setSteamUser(null);
+    setGames([]);
+    setSelectedGame(null);
+    setSelectedPatchNote(null);
+    setError(null);
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -174,47 +183,71 @@ const Dashboard = () => {
         {/* User Connected Content */}
         {steamUser && (
           <>
-            {/* Recent Patch Feed - Full width at top */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-              <div className="relative">
-                <RecentPatchFeed 
-                  games={games} 
-                  onGameSelect={setSelectedGame}
-                  onPatchSelect={setSelectedPatchNote}
+            {/* User Info & Home Button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <img
+                  src={steamUser.avatarfull}
+                  alt={steamUser.personaname}
+                  className="w-12 h-12 rounded-full border-2 border-purple-400/50"
                 />
+                <div>
+                  <h2 className="text-xl font-bold text-white">{steamUser.personaname}</h2>
+                  <p className="text-slate-400 text-sm">Connected to Steam</p>
+                </div>
               </div>
-            </div>
-            
-            {/* Games Library - Full width */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
-              <div className="relative">
-                <GameLibrary 
-                  games={games}
-                  selectedGame={selectedGame}
-                  onGameSelect={setSelectedGame}
-                  formatPlaytime={formatPlaytime}
-                />
-              </div>
-            </div>
-
-            {/* Disconnect Button */}
-            <div className="flex justify-center">
+              
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="glass-effect border-red-400/50 text-red-300 hover:bg-red-500/20 font-medium"
-                onClick={() => {
-                  setSteamUser(null);
-                  setGames([]);
-                  setSelectedGame(null);
-                  setSelectedPatchNote(null);
-                }}
+                className="glass-effect border-cyan-400/50 text-cyan-300 hover:bg-cyan-500/20 font-medium"
+                onClick={handleGoHome}
               >
-                <Zap className="h-4 w-4 mr-2" />
-                Disconnect
+                <Home className="h-4 w-4 mr-2" />
+                Home
               </Button>
+            </div>
+
+            {/* Tabbed Content */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+              <div className="relative glass-effect border-purple-500/30 backdrop-blur-xl rounded-3xl p-6">
+                <Tabs defaultValue="updates" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 glass-effect bg-slate-800/50 border-slate-600">
+                    <TabsTrigger 
+                      value="updates" 
+                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Recent Updates
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="library" 
+                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
+                    >
+                      <Library className="h-4 w-4 mr-2" />
+                      Game Library
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="updates" className="mt-6">
+                    <RecentPatchFeed 
+                      games={games} 
+                      onGameSelect={setSelectedGame}
+                      onPatchSelect={setSelectedPatchNote}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="library" className="mt-6">
+                    <GameLibrary 
+                      games={games}
+                      selectedGame={selectedGame}
+                      onGameSelect={setSelectedGame}
+                      formatPlaytime={formatPlaytime}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </div>
           </>
         )}
