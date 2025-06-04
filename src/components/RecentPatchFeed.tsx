@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,10 +7,7 @@ import {
   Calendar, 
   Loader2, 
   FileText, 
-  ExternalLink,
-  Zap,
-  TrendingUp,
-  Clock
+  TrendingUp
 } from 'lucide-react';
 
 interface GameData {
@@ -26,10 +24,7 @@ interface RecentPatchNote {
   gameIcon: string;
   title: string;
   date: string;
-  version: string;
-  type: 'major' | 'minor' | 'hotfix' | 'content';
   summary: string;
-  size?: string;
   fullContent?: string;
 }
 
@@ -60,10 +55,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           gameIcon: 'c4b7e93b-3e5f-4b5e-9f2e-8a7d6c5b4a3f',
           title: 'Winter Update 2024',
           date: '2024-01-15',
-          version: '2.4.0',
-          type: 'major',
           summary: 'New winter maps, weapon balancing, and performance improvements.',
-          size: '2.3 GB',
           fullContent: `# Winter Update 2024\n\n## New Maps\n- de_winter: A snowy variant of the classic map\n- Winter collection featuring festive themes\n\n## Weapon Balancing\n- AK-47: Reduced recoil by 5%\n- M4A4: Increased damage falloff\n- AWP: Adjusted scope-in time\n\n## Performance Improvements\n- Optimized rendering for winter effects\n- Reduced memory usage by 15%\n- Fixed several crash issues`
         },
         {
@@ -73,10 +65,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           gameIcon: 'a2c4f8d9-7e1b-4c6a-8f3e-5d9a7b2c1e8f',
           title: 'New Hero: Kez',
           date: '2024-01-12',
-          version: '7.37',
-          type: 'major',
           summary: 'Introducing Kez, the latest hero with unique dual-weapon mechanics.',
-          size: '1.1 GB',
           fullContent: `# New Hero: Kez\n\n## Hero Overview\nKez is a versatile melee hero who can switch between two weapon modes:\n\n### Katana Mode\n- High mobility and burst damage\n- Perfect for initiation and escape\n\n### Sai Mode\n- Defensive capabilities and sustain\n- Ideal for team fights and protection\n\n## Abilities\n1. **Falcon Rush** - Dash forward dealing damage\n2. **Echo Slam** - AoE disable in both modes\n3. **Kazurai Katana** - Weapon mastery passive\n4. **Shodo Sai** - Defensive stance ultimate`
         },
         {
@@ -86,10 +75,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           gameIcon: 'f7b3d5a1-9c8e-4f2a-b6d7-3a9c8f5e2b1d',
           title: 'Season 19: Ignite',
           date: '2024-01-10',
-          version: '19.0.0',
-          type: 'major',
           summary: 'New legend Conduit, map updates to Kings Canyon, and ranked changes.',
-          size: '8.2 GB',
           fullContent: `# Season 19: Ignite\n\n## New Legend: Conduit\n**Tactical:** Energy Barricade - Deploy an energy wall\n**Passive:** Savvy - Scan nearby enemies through walls\n**Ultimate:** Arc Flash - Team-wide speed and shield boost\n\n## Kings Canyon Updates\n- Reworked Artillery area\n- New rotation paths\n- Updated loot distribution\n\n## Ranked Changes\n- New tier: Apex Predator Master\n- Adjusted RP requirements\n- Improved matchmaking algorithms`
         },
         {
@@ -99,10 +85,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           gameIcon: 'e8a9f2d3-4c7b-5e1f-9a8d-6f3e8a9c2b5d',
           title: 'GTA Online Security Update',
           date: '2024-01-08',
-          version: '1.67.1',
-          type: 'hotfix',
           summary: 'Security improvements and bug fixes for GTA Online.',
-          size: '245 MB',
           fullContent: `# GTA Online Security Update\n\n## Security Improvements\n- Enhanced anti-cheat measures\n- Improved player reporting system\n- Fixed exploits in several missions\n\n## Bug Fixes\n- Resolved connection issues in public lobbies\n- Fixed vehicle duplication glitch\n- Corrected payout calculations for heists\n\n## Stability\n- Reduced crash frequency by 30%\n- Improved server stability during peak hours`
         },
         {
@@ -112,10 +95,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           gameIcon: 'c4b7e93b-3e5f-4b5e-9f2e-8a7d6c5b4a3f',
           title: 'Balance Hotfix',
           date: '2024-01-08',
-          version: '2.3.2',
-          type: 'hotfix',
           summary: 'Quick fixes for gameplay balance issues reported by the community.',
-          size: '150 MB',
           fullContent: `# Balance Hotfix\n\n## Weapon Adjustments\n- Desert Eagle: Reduced one-shot headshot range\n- Galil AR: Slightly increased accuracy\n- Zeus: Fixed animation bug\n\n## Map Fixes\n- Mirage: Fixed pixel walk spots\n- Inferno: Adjusted smoke lineups\n- Dust2: Corrected collision issues\n\n## Gameplay\n- Fixed bomb defuse kit pickup bug\n- Improved server tick rate consistency\n- Resolved spectator mode issues`
         }
       ];
@@ -132,26 +112,6 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
 
     fetchRecentPatches();
   }, [games]);
-
-  const getTypeIcon = (type: RecentPatchNote['type']) => {
-    switch (type) {
-      case 'major': return <Zap className="h-4 w-4" />;
-      case 'minor': return <TrendingUp className="h-4 w-4" />;
-      case 'hotfix': return <Clock className="h-4 w-4" />;
-      case 'content': return <FileText className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const getTypeColor = (type: RecentPatchNote['type']) => {
-    switch (type) {
-      case 'major': return 'bg-purple-600/20 text-purple-400 border-purple-500/30';
-      case 'minor': return 'bg-blue-600/20 text-blue-400 border-blue-500/30';
-      case 'hotfix': return 'bg-red-600/20 text-red-400 border-red-500/30';
-      case 'content': return 'bg-green-600/20 text-green-400 border-green-500/30';
-      default: return 'bg-gray-600/20 text-gray-400 border-gray-500/30';
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -182,7 +142,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
       <CardHeader>
         <CardTitle className="flex items-center space-x-2 text-white">
           <TrendingUp className="h-5 w-5" />
-          <span>Recent Major Updates</span>
+          <span>Recent Updates</span>
           <Badge variant="secondary" className="bg-purple-600/20 text-purple-400">
             Latest
           </Badge>
@@ -200,7 +160,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
         ) : recentPatches.length === 0 ? (
           <div className="text-center py-8 text-slate-400">
             <FileText className="h-8 w-8 mx-auto mb-3 opacity-50" />
-            <p>No recent major updates found for your games</p>
+            <p>No recent updates found for your games</p>
           </div>
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -226,15 +186,9 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-medium text-white text-sm truncate">
-                              {patch.title}
-                            </h4>
-                            <Badge className={getTypeColor(patch.type)} variant="secondary">
-                              {getTypeIcon(patch.type)}
-                              <span className="ml-1 capitalize">{patch.type}</span>
-                            </Badge>
-                          </div>
+                          <h4 className="font-medium text-white text-sm truncate mb-1">
+                            {patch.title}
+                          </h4>
                           
                           <p className="text-xs text-slate-400 mb-1">{patch.gameName}</p>
                           <p className="text-sm text-slate-300 leading-relaxed">{patch.summary}</p>
@@ -244,13 +198,6 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
                               <Calendar className="h-3 w-3" />
                               <span>{formatDate(patch.date)}</span>
                             </span>
-                            <span>v{patch.version}</span>
-                            {patch.size && (
-                              <span className="flex items-center space-x-1">
-                                <ExternalLink className="h-3 w-3" />
-                                <span>{patch.size}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>

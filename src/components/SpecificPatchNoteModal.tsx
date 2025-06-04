@@ -6,14 +6,9 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Calendar, 
-  ExternalLink, 
-  Zap, 
-  TrendingUp, 
-  Clock, 
   FileText,
   X,
   Sparkles,
@@ -27,10 +22,7 @@ interface RecentPatchNote {
   gameIcon: string;
   title: string;
   date: string;
-  version: string;
-  type: 'major' | 'minor' | 'hotfix' | 'content';
   summary: string;
-  size?: string;
   fullContent?: string;
 }
 
@@ -43,26 +35,6 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
   patchNote, 
   onClose 
 }) => {
-  const getTypeIcon = (type: RecentPatchNote['type']) => {
-    switch (type) {
-      case 'major': return <Zap className="h-4 w-4" />;
-      case 'minor': return <TrendingUp className="h-4 w-4" />;
-      case 'hotfix': return <Clock className="h-4 w-4" />;
-      case 'content': return <FileText className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const getTypeColor = (type: RecentPatchNote['type']) => {
-    switch (type) {
-      case 'major': return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-      case 'minor': return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
-      case 'hotfix': return 'bg-gradient-to-r from-red-500 to-orange-500 text-white';
-      case 'content': return 'bg-gradient-to-r from-green-500 to-teal-500 text-white';
-      default: return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -128,23 +100,12 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
                   </DialogTitle>
                   <div className="flex items-center space-x-4 mb-4">
                     <span className="text-cyan-300 font-medium text-lg">{patchNote.gameName}</span>
-                    <Badge className={`${getTypeColor(patchNote.type)} px-3 py-1 font-bold shadow-lg`}>
-                      {getTypeIcon(patchNote.type)}
-                      <span className="ml-2 capitalize">{patchNote.type}</span>
-                    </Badge>
                   </div>
                   <div className="flex items-center space-x-6 text-sm text-gray-400">
                     <span className="flex items-center space-x-2 glass-effect px-3 py-1 rounded-lg">
                       <Calendar className="h-4 w-4 text-cyan-400" />
                       <span className="text-cyan-300">{formatDate(patchNote.date)}</span>
                     </span>
-                    <span className="glass-effect px-3 py-1 rounded-lg text-purple-300 font-medium">Version {patchNote.version}</span>
-                    {patchNote.size && (
-                      <span className="flex items-center space-x-2 glass-effect px-3 py-1 rounded-lg">
-                        <ExternalLink className="h-4 w-4 text-green-400" />
-                        <span className="text-green-300">{patchNote.size}</span>
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

@@ -36,10 +36,7 @@ interface RecentPatchNote {
   gameIcon: string;
   title: string;
   date: string;
-  version: string;
-  type: 'major' | 'minor' | 'hotfix' | 'content';
   summary: string;
-  size?: string;
   fullContent?: string;
 }
 
@@ -183,20 +180,8 @@ const Dashboard = () => {
         {/* User Connected Content */}
         {steamUser && (
           <>
-            {/* User Info & Home Button */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <img
-                  src={steamUser.avatarfull}
-                  alt={steamUser.personaname}
-                  className="w-12 h-12 rounded-full border-2 border-purple-400/50"
-                />
-                <div>
-                  <h2 className="text-xl font-bold text-white">{steamUser.personaname}</h2>
-                  <p className="text-slate-400 text-sm">Connected to Steam</p>
-                </div>
-              </div>
-              
+            {/* Home Button */}
+            <div className="flex justify-end">
               <Button 
                 variant="outline" 
                 size="sm" 
