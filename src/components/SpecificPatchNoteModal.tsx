@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Dialog, 
@@ -50,27 +49,237 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
   };
 
   const formatContent = (content: string) => {
-    // Simple markdown-like formatting with enhanced styling
-    return content
-      .split('\n')
-      .map((line, index) => {
-        if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-3xl font-bold text-white mt-8 mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">{line.slice(2)}</h1>;
+    // Parse Steam BBCode tags
+    const lines = content.split('\n');
+    const result: React.ReactNode[] = [];
+    let listItems: React.ReactNode[] = [];
+    let inList = false;
+    let inOrderedList = false;
+
+    lines.forEach((line, index) => {
+      let processedLine = line;
+      
+      // Handle list items
+      if (processedLine.includes('[list]')) {
+        inList = true;
+        return;
+      }
+      if (processedLine.includes('[/list]')) {
+        if (listItems.length > 0) {
+          result.push(
+            <ul key={`list-${index}`} className="list-disc ml-6 mb-4 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
         }
-        if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-2xl font-semibold text-cyan-300 mt-6 mb-4 flex items-center"><Star className="h-5 w-5 mr-2" />{line.slice(3)}</h2>;
+        inList = false;
+        return;
+      }
+      if (processedLine.includes('[olist]')) {
+        inOrderedList = true;
+        return;
+      }
+      if (processedLine.includes('[/olist]')) {
+        if (listItems.length > 0) {
+          result.push(
+            <ol key={`olist-${index}`} className="list-decimal ml-6 mb-4 space-y-1">
+              {listItems}
+            </ol>
+          );
+          listItems = [];
         }
-        if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-xl font-medium text-purple-300 mt-4 mb-3 flex items-center"><Sparkles className="h-4 w-4 mr-2" />{line.slice(4)}</h3>;
+        inOrderedList = false;
+        return;
+      }
+
+      // Handle list items
+      if ((inList || inOrderedList) && processedLine.trim().startsWith('[*]')) {
+        const itemText = processedLine.replace(/^\s*\[\*\]\s*/, '');
+        listItems.push(
+          <li key={`item-${index}`} className="text-gray-300">
+            {parseBBCodeInline(itemText)}
+          </li>
+        );
+        return;
+      }
+
+      // Handle headers
+      if (processedLine.includes('[h1]')) {
+        const headerText = processedLine.replace(/\[h1\](.*?)\[\/h1\]/g, '$1');
+        result.push(
+          <h1 key={index} className="text-3xl font-bold text-white mt-8 mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            {parseBBCodeInline(headerText)}
+          </h1>
+        );
+        return;
+      }
+      if (processedLine.includes('[h2]')) {
+        const headerText = processedLine.replace(/\[h2\](.*?)\[\/h2\]/g, '$1');
+        result.push(
+          <h2 key={index} className="text-2xl font-semibold text-cyan-300 mt-6 mb-4 flex items-center">
+            <Star className="h-5 w-5 mr-2" />
+            {parseBBCodeInline(headerText)}
+          </h2>
+        );
+        return;
+      }
+      if (processedLine.includes('[h3]')) {
+        const headerText = processedLine.replace(/\[h3\](.*?)\[\/h3\]/g, '$1');
+        result.push(
+          <h3 key={index} className="text-xl font-medium text-purple-300 mt-4 mb-3 flex items-center">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {parseBBCodeInline(headerText)}
+          </h3>
+        );
+        return;
+      }
+
+      // Handle horizontal rule
+      if (processedLine.includes('[hr][/hr]')) {
+        result.push(<hr key={index} className="border-purple-500/30 my-6" />);
+        return;
+      }
+
+      // Handle code blocks
+      if (processedLine.includes('[code]')) {
+        const codeText = processedLine.replace(/\[code\](.*?)\[\/code\]/g, '$1');
+        result.push(
+          <pre key={index} className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4 mb-4 overflow-x-auto">
+            <code className="text-cyan-300 font-mono">{codeText}</code>
+          </pre>
+        );
+        return;
+      }
+
+      // Handle quotes
+      if (processedLine.includes('[quote=')) {
+        const quoteMatch = processedLine.match(/\[quote=([^\]]+)\](.*?)\[\/quote\]/);
+        if (quoteMatch) {
+          const [, author, quoteText] = quoteMatch;
+          result.push(
+            <blockquote key={index} className="border-l-4 border-cyan-400 pl-4 mb-4 glass-effect p-4 rounded-r-lg">
+              <p className="text-gray-300 mb-2">{parseBBCodeInline(quoteText)}</p>
+              <cite className="text-cyan-400 text-sm">Originally posted by {author}</cite>
+            </blockquote>
+          );
+          return;
         }
-        if (line.startsWith('- ')) {
-          return <li key={index} className="text-gray-300 ml-6 mb-2 flex items-start"><span className="text-cyan-400 mr-2">•</span>{line.slice(2)}</li>;
-        }
-        if (line.trim() === '') {
-          return <br key={index} />;
-        }
-        return <p key={index} className="text-gray-300 mb-3 leading-relaxed">{line}</p>;
-      });
+      }
+
+      // Handle empty lines
+      if (processedLine.trim() === '') {
+        result.push(<br key={index} />);
+        return;
+      }
+
+      // Handle regular paragraphs with inline formatting
+      result.push(
+        <p key={index} className="text-gray-300 mb-3 leading-relaxed">
+          {parseBBCodeInline(processedLine)}
+        </p>
+      );
+    });
+
+    return result;
+  };
+
+  const parseBBCodeInline = (text: string): React.ReactNode => {
+    // Handle inline formatting tags
+    let result: React.ReactNode = text;
+
+    // Bold
+    result = parseTag(result as string, 'b', (content) => 
+      <strong className="font-bold text-white">{content}</strong>
+    );
+
+    // Italic
+    result = parseTag(result as string, 'i', (content) => 
+      <em className="italic">{content}</em>
+    );
+
+    // Underline
+    result = parseTag(result as string, 'u', (content) => 
+      <u className="underline">{content}</u>
+    );
+
+    // Strikethrough
+    result = parseTag(result as string, 'strike', (content) => 
+      <s className="line-through">{content}</s>
+    );
+
+    // Spoiler
+    result = parseTag(result as string, 'spoiler', (content) => 
+      <span className="bg-gray-600 text-gray-600 hover:text-white transition-colors cursor-pointer rounded px-1">
+        {content}
+      </span>
+    );
+
+    // URLs
+    result = parseUrlTag(result as string);
+
+    // No parse (remove tags but keep content)
+    result = parseTag(result as string, 'noparse', (content) => content);
+
+    return result;
+  };
+
+  const parseTag = (text: string, tag: string, render: (content: string) => React.ReactNode): React.ReactNode => {
+    const regex = new RegExp(`\\[${tag}\\](.*?)\\[\\/${tag}\\]`, 'g');
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the tag
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      // Add the rendered tag content
+      parts.push(render(match[1]));
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 1 ? <>{parts}</> : text;
+  };
+
+  const parseUrlTag = (text: string): React.ReactNode => {
+    const regex = /\[url=([^\]]+)\](.*?)\[\/url\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the tag
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      // Add the link
+      parts.push(
+        <a 
+          key={match.index}
+          href={match[1].startsWith('http') ? match[1] : `https://${match[1]}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-400 hover:text-cyan-300 underline"
+        >
+          {match[2]}
+        </a>
+      );
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 1 ? <>{parts}</> : text;
   };
 
   return (
