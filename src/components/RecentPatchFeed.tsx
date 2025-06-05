@@ -96,8 +96,8 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, recentPatches,
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-      <CardHeader>
+    <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm h-full flex flex-col">
+      <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center space-x-2 text-white">
           <TrendingUp className="h-5 w-5" />
           <span>Recent Updates</span>
@@ -107,7 +107,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, recentPatches,
         </CardTitle>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center space-y-4">
@@ -121,7 +121,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, recentPatches,
             <p>No recent updates found for your games</p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto min-h-80">
             {recentPatches.map((patch) => (
               <Card 
                 key={patch.gid}
@@ -167,7 +167,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, recentPatches,
         )}
         
         {recentPatches.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-600">
+          <div className="mt-4 pt-4 border-t border-slate-600 flex-shrink-0">
             <p className="text-xs text-slate-400 text-center">
               Click on any update to view the detailed patch notes
             </p>
