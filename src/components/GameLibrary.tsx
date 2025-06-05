@@ -93,12 +93,12 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-4 max-h-72 overflow-y-auto overflow-x-hidden">
           {filteredGames.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="p-6 glass-effect rounded-2xl">
-                <Search className="h-16 w-16 mx-auto mb-6 text-cyan-400 opacity-50" />
-                <p className="text-gray-300 text-xl">No games found matching "{searchTerm}"</p>
+            <div className="text-center py-8">
+              <div className="p-4 glass-effect rounded-2xl">
+                <Search className="h-12 w-12 mx-auto mb-4 text-cyan-400 opacity-50" />
+                <p className="text-gray-300 text-lg">No games found matching "{searchTerm}"</p>
               </div>
             </div>
           ) : (
@@ -108,44 +108,44 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
               const isSelected = selectedGame?.appid === game.appid;
               
               return (
-                <div key={game.appid} className="relative">
+                <div key={game.appid} className="relative pr-2">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-2xl blur-lg"></div>
                   <Card 
-                    className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] slide-in ${
+                    className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.01] slide-in ${
                       isSelected 
                         ? 'glass-effect border-cyan-400 shadow-xl shadow-cyan-500/30 neon-glow' 
                         : 'glass-effect border-purple-400/30 hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-500/20'
                     }`}
                     onClick={() => onGameSelect(game)}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-6">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-4">
                         {/* Game Icon */}
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                           <img
                             src={getGameIconUrl(game.appid, game.img_icon_url)}
                             alt={game.name}
-                            className="w-16 h-16 rounded-xl object-cover border-2 border-cyan-400/50"
+                            className="w-12 h-12 rounded-lg object-cover border-2 border-cyan-400/50"
                             onError={(e) => {
                               e.currentTarget.src = '/placeholder.svg';
                             }}
                           />
                           {isSelected && (
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center neon-glow">
-                              <div className="w-3 h-3 bg-white rounded-full"></div>
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center neon-glow">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
                             </div>
                           )}
                         </div>
 
                         {/* Game Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-white truncate text-lg">{game.name}</h3>
-                          <div className="flex items-center space-x-3 mt-2">
-                            <Badge className={`${category.color} ${category.glow} px-3 py-1 font-bold`}>
-                              <CategoryIcon className="h-4 w-4 mr-2" />
+                          <h3 className="font-bold text-white truncate text-base">{game.name}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge className={`${category.color} ${category.glow} px-2 py-0.5 text-xs font-bold`}>
+                              <CategoryIcon className="h-3 w-3 mr-1" />
                               {category.label}
                             </Badge>
-                            <span className="text-cyan-300 font-medium">
+                            <span className="text-cyan-300 font-medium text-sm">
                               {formatPlaytime(game.playtime_forever)}
                             </span>
                           </div>
@@ -153,8 +153,8 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
 
                         {/* Stats Badge */}
                         {game.has_community_visible_stats && (
-                          <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-3 py-1 font-bold">
-                            <Star className="h-3 w-3 mr-1" />
+                          <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-2 py-0.5 text-xs font-bold flex-shrink-0">
+                            <Star className="h-2 w-2 mr-1" />
                             Stats
                           </Badge>
                         )}
@@ -168,14 +168,14 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
         </div>
 
         {selectedGame && (
-          <div className="mt-6 p-6 glass-effect border border-cyan-400/50 rounded-2xl">
+          <div className="mt-4 p-4 glass-effect border border-cyan-400/50 rounded-2xl">
             <div className="flex items-center space-x-3 text-cyan-300">
-              <TrendingUp className="h-5 w-5" />
-              <span className="font-bold text-lg">
+              <TrendingUp className="h-4 w-4" />
+              <span className="font-bold text-base">
                 Active Selection: {selectedGame.name}
               </span>
             </div>
-            <p className="text-gray-300 mt-2">
+            <p className="text-gray-300 mt-1 text-sm">
               Ready to explore patch notes and updates for this epic title
             </p>
           </div>

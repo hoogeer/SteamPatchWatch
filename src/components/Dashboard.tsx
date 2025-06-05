@@ -140,12 +140,15 @@ const Dashboard = () => {
               SteamPatchWatch
             </h1>
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl"></div>
-            <p className="relative text-xl text-gray-200 max-w-3xl mx-auto p-6 glass-effect rounded-2xl">
-              Experience the next generation of patch tracking. Monitor updates for your Steam games with our sleek, modern interface featuring real-time notifications and detailed patch analysis.
-            </p>
-          </div>
+          {/* Only show description when no user is connected */}
+          {!steamUser && (
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl"></div>
+              <p className="relative text-xl text-gray-200 max-w-3xl mx-auto p-6 glass-effect rounded-2xl">
+                Experience the next generation of patch tracking. Monitor updates for your Steam games with our sleek, modern interface featuring real-time notifications and detailed patch analysis.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Steam User Form */}
