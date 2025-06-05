@@ -20,8 +20,8 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (steamId.trim()) {
-      onSubmit(steamId.trim(), apiKey.trim() || undefined);
+    if (steamId.trim() && apiKey.trim()) {
+      onSubmit(steamId.trim(), apiKey.trim());
     }
   };
 
@@ -53,7 +53,7 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
           <div className="flex items-center justify-between">
             <Label htmlFor="apiKey" className="text-slate-200 flex items-center space-x-2">
               <Key className="h-4 w-4" />
-              <span>Steam API Key (Optional)</span>
+              <span>Steam API Key (Required)</span>
             </Label>
             <Button
               type="button"
@@ -69,9 +69,10 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
           <Input
             id="apiKey"
             type="password"
-            placeholder="Your Steam Web API Key (for private profiles and detailed data)"
+            placeholder="Your Steam Web API Key (required for accessing Steam data)"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
+            required
             className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-500"
           />
         </div>
@@ -82,13 +83,13 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
             <Info className="h-4 w-4" />
             <AlertDescription className="text-blue-200 space-y-2">
               <p>
-                An API key is optional but recommended for:
+                An API key is required for:
               </p>
               <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Accessing private profile data</li>
+                <li>Accessing profile data</li>
                 <li>Getting detailed playtime statistics</li>
                 <li>Viewing recently played games</li>
-                <li>Higher API rate limits</li>
+                <li>Fetching patch notes and updates</li>
               </ul>
               <div className="flex items-center space-x-1 text-sm">
                 <span>Get your free API key:</span>
@@ -110,7 +111,7 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
       {/* Submit Button */}
       <Button 
         type="submit" 
-        disabled={loading || !steamId.trim()} 
+        disabled={loading || !steamId.trim() || !apiKey.trim()} 
         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200"
       >
         {loading ? (
