@@ -66,8 +66,8 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
   };
 
   return (
-    <Card className="glass-effect border-blue-400/30 backdrop-blur-xl slide-in">
-      <CardHeader>
+    <Card className="glass-effect border-blue-400/30 backdrop-blur-xl slide-in h-full flex flex-col">
+      <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center justify-between text-white">
           <span className="flex items-center space-x-3">
             <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
@@ -92,8 +92,8 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent>
-        <div className="space-y-4 max-h-72 overflow-y-auto overflow-x-hidden">
+      <CardContent className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2">
           {filteredGames.length === 0 ? (
             <div className="text-center py-8">
               <div className="p-4 glass-effect rounded-2xl">
@@ -102,73 +102,75 @@ const GameLibrary: React.FC<GameLibraryProps> = ({
               </div>
             </div>
           ) : (
-            filteredGames.map((game) => {
-              const category = getPlaytimeCategory(game.playtime_forever);
-              const CategoryIcon = category.icon;
-              const isSelected = selectedGame?.appid === game.appid;
-              
-              return (
-                <div key={game.appid} className="relative pr-2">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-2xl blur-lg"></div>
-                  <Card 
-                    className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.01] slide-in ${
-                      isSelected 
-                        ? 'glass-effect border-cyan-400 shadow-xl shadow-cyan-500/30 neon-glow' 
-                        : 'glass-effect border-purple-400/30 hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-500/20'
-                    }`}
-                    onClick={() => onGameSelect(game)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-4">
-                        {/* Game Icon */}
-                        <div className="relative flex-shrink-0">
-                          <img
-                            src={getGameIconUrl(game.appid, game.img_icon_url)}
-                            alt={game.name}
-                            className="w-12 h-12 rounded-lg object-cover border-2 border-cyan-400/50"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder.svg';
-                            }}
-                          />
-                          {isSelected && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center neon-glow">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
+            <div className="space-y-4">
+              {filteredGames.map((game) => {
+                const category = getPlaytimeCategory(game.playtime_forever);
+                const CategoryIcon = category.icon;
+                const isSelected = selectedGame?.appid === game.appid;
+                
+                return (
+                  <div key={game.appid} className="relative pr-2">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-2xl blur-lg"></div>
+                    <Card 
+                      className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.01] slide-in ${
+                        isSelected 
+                          ? 'glass-effect border-cyan-400 shadow-xl shadow-cyan-500/30 neon-glow' 
+                          : 'glass-effect border-purple-400/30 hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-500/20'
+                      }`}
+                      onClick={() => onGameSelect(game)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-4">
+                          {/* Game Icon */}
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={getGameIconUrl(game.appid, game.img_icon_url)}
+                              alt={game.name}
+                              className="w-12 h-12 rounded-lg object-cover border-2 border-cyan-400/50"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                            {isSelected && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center neon-glow">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Game Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-white truncate text-base">{game.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className={`${category.color} ${category.glow} px-2 py-0.5 text-xs font-bold`}>
+                                <CategoryIcon className="h-3 w-3 mr-1" />
+                                {category.label}
+                              </Badge>
+                              <span className="text-cyan-300 font-medium text-sm">
+                                {formatPlaytime(game.playtime_forever)}
+                              </span>
                             </div>
+                          </div>
+
+                          {/* Stats Badge */}
+                          {game.has_community_visible_stats && (
+                            <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-2 py-0.5 text-xs font-bold flex-shrink-0">
+                              <Star className="h-2 w-2 mr-1" />
+                              Stats
+                            </Badge>
                           )}
                         </div>
-
-                        {/* Game Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-white truncate text-base">{game.name}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge className={`${category.color} ${category.glow} px-2 py-0.5 text-xs font-bold`}>
-                              <CategoryIcon className="h-3 w-3 mr-1" />
-                              {category.label}
-                            </Badge>
-                            <span className="text-cyan-300 font-medium text-sm">
-                              {formatPlaytime(game.playtime_forever)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Stats Badge */}
-                        {game.has_community_visible_stats && (
-                          <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-2 py-0.5 text-xs font-bold flex-shrink-0">
-                            <Star className="h-2 w-2 mr-1" />
-                            Stats
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
         {selectedGame && (
-          <div className="mt-4 p-4 glass-effect border border-cyan-400/50 rounded-2xl">
+          <div className="mt-4 p-4 glass-effect border border-cyan-400/50 rounded-2xl flex-shrink-0">
             <div className="flex items-center space-x-3 text-cyan-300">
               <TrendingUp className="h-4 w-4" />
               <span className="font-bold text-base">

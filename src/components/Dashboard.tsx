@@ -129,7 +129,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-6">
           <div className="flex items-center justify-center space-x-4">
@@ -150,6 +150,66 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+
+        {/* User Connected Content - Moved closer to title */}
+        {steamUser && (
+          <>
+            {/* Home Button - Moved up */}
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="glass-effect border-cyan-400/50 text-cyan-300 hover:bg-cyan-500/20 font-medium"
+                onClick={handleGoHome}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Button>
+            </div>
+
+            {/* Tabbed Content - Now responsive to browser height */}
+            <div className="relative h-[calc(100vh-300px)] min-h-[500px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+              <div className="relative glass-effect border-purple-500/30 backdrop-blur-xl rounded-3xl p-6 h-full flex flex-col">
+                <Tabs defaultValue="updates" className="w-full flex flex-col h-full">
+                  <TabsList className="grid w-full grid-cols-2 glass-effect bg-slate-800/50 border-slate-600 flex-shrink-0">
+                    <TabsTrigger 
+                      value="updates" 
+                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Recent Updates
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="library" 
+                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
+                    >
+                      <Library className="h-4 w-4 mr-2" />
+                      Game Library
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="updates" className="mt-6 flex-1 overflow-hidden">
+                    <RecentPatchFeed 
+                      games={games} 
+                      onGameSelect={setSelectedGame}
+                      onPatchSelect={setSelectedPatchNote}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="library" className="mt-6 flex-1 overflow-hidden">
+                    <GameLibrary 
+                      games={games}
+                      selectedGame={selectedGame}
+                      onGameSelect={setSelectedGame}
+                      formatPlaytime={formatPlaytime}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Steam User Form */}
         {!steamUser && (
@@ -178,66 +238,6 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* User Connected Content */}
-        {steamUser && (
-          <>
-            {/* Home Button */}
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="glass-effect border-cyan-400/50 text-cyan-300 hover:bg-cyan-500/20 font-medium"
-                onClick={handleGoHome}
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-            </div>
-
-            {/* Tabbed Content */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
-              <div className="relative glass-effect border-purple-500/30 backdrop-blur-xl rounded-3xl p-6">
-                <Tabs defaultValue="updates" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 glass-effect bg-slate-800/50 border-slate-600">
-                    <TabsTrigger 
-                      value="updates" 
-                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Recent Updates
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="library" 
-                      className="data-[state=active]:bg-purple-600/50 data-[state=active]:text-white text-slate-300"
-                    >
-                      <Library className="h-4 w-4 mr-2" />
-                      Game Library
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="updates" className="mt-6">
-                    <RecentPatchFeed 
-                      games={games} 
-                      onGameSelect={setSelectedGame}
-                      onPatchSelect={setSelectedPatchNote}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="library" className="mt-6">
-                    <GameLibrary 
-                      games={games}
-                      selectedGame={selectedGame}
-                      onGameSelect={setSelectedGame}
-                      formatPlaytime={formatPlaytime}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </div>
-          </>
         )}
 
         {/* Patch Notes Panel */}
