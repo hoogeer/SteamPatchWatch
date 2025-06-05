@@ -1,73 +1,65 @@
-# Welcome to your Lovable project
+# SteamPatchWatch
 
-## Project info
+A modern Steam patch notes viewer and tracker built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/8924111f-a255-4fe6-8e3f-56734ff8efab
+## Features
 
-## How can I edit this code?
+- **Steam Login & Game Library**: Connect with your Steam ID and view your owned games.
+- **Patch Notes Feed**: See recent patch notes for your games, fetched live from the Steam API.
+- **Rich Patch Note Rendering**: Patch notes are parsed from Steam's BBCode and displayed with headings, lists, links, images, and embedded YouTube previews.
+- **Collapsible Patch Cards**: Expand/collapse patch notes for easy browsing.
+- **Dark Mode & Responsive UI**: Beautiful, readable interface for desktop and mobile.
+- **Retry & Error Handling**: Automatic retry for Steam API rate limits, with user-friendly error toasts.
 
-There are several ways of editing your application.
+## Live Demo
 
-**Use Lovable**
+The app is deployed and available at:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8924111f-a255-4fe6-8e3f-56734ff8efab) and start prompting.
+👉 [https://steam-patch-watch.vercel.app/](https://steam-patch-watch.vercel.app/)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
+- Node.js & npm (recommended: use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- A Steam API key (for full functionality)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/hoogeer/SteamPatchWatch
+cd SteamPatchWatch
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open http://localhost:5173 in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Steam API Key
+- You can use the app without a Steam API key, but some features may be limited or rate-limited.
+- To get a key: https://steamcommunity.com/dev/apikey
+- Enter your key in the app when prompted for best results.
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Deploy on [Vercel](https://vercel.com/) or any platform that supports Vite/React/Node.js API routes.
+- Environment variable: `STEAM_API_KEY` (optional, for server-side API calls)
 
-## What technologies are used for this project?
-
-This project is built with:
-
+## Technologies Used
 - Vite
-- TypeScript
 - React
+- TypeScript
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Customization
+- Patch note rendering is handled in `src/utils/BBCodeHelper.ts`.
+- UI components are in `src/components/`.
+- API routes (Steam integration) are in `api/`.
 
-Simply open [Lovable](https://lovable.dev/projects/8924111f-a255-4fe6-8e3f-56734ff8efab) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+MIT
