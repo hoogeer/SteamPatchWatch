@@ -202,7 +202,7 @@ const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose, apiKey
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <div>
-                                <h3 className="font-semibold text-white">{note.gameName}</h3>
+                                <h3 className="font-semibold text-white">{note.announcement_body.headline}</h3>
                                 <div className="flex items-center space-x-4 text-sm text-slate-400 mt-1">
                                   <span className="flex items-center space-x-1">
                                     <Calendar className="h-3 w-3" />

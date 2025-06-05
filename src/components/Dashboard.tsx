@@ -79,11 +79,19 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
   const [recentPatches, setRecentPatches] = useState<RecentPatchNote[]>([]);
+  const fetchGamesAbortController = React.useRef<AbortController | null>(null);
 
 const handleUserSubmit = async (steamId: string, apiKeyInput?: string) => {
   setApiKey(apiKeyInput);
   setLoading(true);
   setError(null);
+
+  // Abort any previous fetches
+  if (fetchGamesAbortController.current) {
+    fetchGamesAbortController.current.abort();
+  }
+  fetchGamesAbortController.current = new AbortController();
+  const abortSignal = fetchGamesAbortController.current.signal;
 
   try {
     // 1. Resolve vanity URL if needed
@@ -118,13 +126,16 @@ const handleUserSubmit = async (steamId: string, apiKeyInput?: string) => {
       description: `Connected to ${user.personaname}'s Steam account`,
     });
 
-    // 3. Fetch games
+    // 3. Fetch games with retry and abort support
     let gamesRes, gamesData;
     let gamesFetchAttempts = 0;
     const maxGamesFetchRetries = 5; // Optional: limit retries to avoid infinite loop
     while (true) {
       try {
-        gamesRes = await fetch(`/api/getGames?steamid=${encodeURIComponent(resolvedSteamId)}${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`);
+        gamesRes = await fetch(
+          `/api/getGames?steamid=${encodeURIComponent(resolvedSteamId)}${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`,
+          { signal: abortSignal }
+        );
         gamesData = await gamesRes.json();
         if (gamesRes.ok && gamesData.response?.games) {
           break; // Success
@@ -132,6 +143,10 @@ const handleUserSubmit = async (steamId: string, apiKeyInput?: string) => {
           throw new Error(gamesData.error || 'Failed to fetch games');
         }
       } catch (err) {
+        if (abortSignal.aborted) {
+          // Cancelled, exit loop
+          return;
+        }
         gamesFetchAttempts++;
         toast({
           title: "Retrying...",
@@ -267,6 +282,9 @@ async function resolveVanityUrl(
   };
 
   const handleGoHome = () => {
+    if (fetchGamesAbortController.current) {
+      fetchGamesAbortController.current.abort();
+    }
     setSteamUser(null);
     setGames([]);
     setSelectedGame(null);

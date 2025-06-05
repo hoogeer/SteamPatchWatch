@@ -53,7 +53,7 @@ const SteamUserForm: React.FC<SteamUserFormProps> = ({ onSubmit, loading }) => {
           <div className="flex items-center justify-between">
             <Label htmlFor="apiKey" className="text-slate-200 flex items-center space-x-2">
               <Key className="h-4 w-4" />
-              <span>Steam API Key (Required)</span>
+              <span>Steam API Key</span>
             </Label>
             <Button
               type="button"
