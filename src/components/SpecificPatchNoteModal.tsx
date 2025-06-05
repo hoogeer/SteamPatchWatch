@@ -13,16 +13,33 @@ import {
   Sparkles,
   Star
 } from 'lucide-react';
+import BBCodeHelper from '@/utils/BBCodeHelper';
 
 interface RecentPatchNote {
-  id: string;
-  gameAppId: number;
+  gameAppId?: number;
   gameName: string;
   gameIcon: string;
-  title: string;
-  date: string;
-  summary: string;
-  fullContent?: string;
+  gid: string;
+  appid: number;
+  event_name: string;
+  rtime32_start_time: number;
+  rtime32_end_time: number;
+  event_type: number;
+  event_notes: string;
+  jsondata: string;
+  announcement_body?: {
+    gid: string;
+    headline: string;
+    body: string;
+    posttime: number;
+    updatetime: number;
+    commentcount: number;
+    tags: string[];
+    voteupcount: number;
+    votedowncount: number;
+    forum_topic_id: string;
+    clanid?: string | number;
+  };
 }
 
 interface SpecificPatchNoteModalProps {
@@ -34,14 +51,17 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
   patchNote, 
   onClose 
 }) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric',
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
+const formatDate = (dateValue: string | number) => {
+  const ms = typeof dateValue === "number" && dateValue < 1e12
+    ? dateValue * 1000
+    : Number(dateValue);
+  const date = new Date(ms);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric',
+    month: 'long', 
+    day: 'numeric' 
+  });
+};
 
   const getGameIconUrl = (appid: number, iconHash: string) => {
     if (!iconHash) return '/placeholder.svg';
@@ -57,7 +77,7 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
     let inOrderedList = false;
 
     lines.forEach((line, index) => {
-      let processedLine = line;
+      const processedLine = line;
       
       // Handle list items
       if (processedLine.includes('[list]')) {
@@ -189,9 +209,9 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
     let result: React.ReactNode = text;
 
     // Bold
-    result = parseTag(result as string, 'b', (content) => 
-      <strong className="font-bold text-white">{content}</strong>
-    );
+      result = parseTag(result as string, 'b', (content) => 
+    <strong className="font-bold text-white">{content}</strong>
+  );
 
     // Italic
     result = parseTag(result as string, 'i', (content) => 
@@ -214,6 +234,18 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
         {content}
       </span>
     );
+    
+    // [img] tag with Steam clan image replacement
+    if (typeof result === "string") {
+      const imgRegex = /\[img\](.*?)\[\/img\]/gi;
+      result = result.replace(imgRegex, (_, url) => {
+        const fixedUrl = url.replace(
+          "{STEAM_CLAN_IMAGE}",
+          "https://clan.cloudflare.steamstatic.com/images"
+        );
+        return `<img src="${fixedUrl}" alt="Image" style="max-width:100%; margin-top: 1rem;" />`;
+      });
+    }
 
     // URLs
     result = parseUrlTag(result as string);
@@ -231,21 +263,19 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
     let match;
 
     while ((match = regex.exec(text)) !== null) {
-      // Add text before the tag
       if (match.index > lastIndex) {
         parts.push(text.slice(lastIndex, match.index));
       }
-      // Add the rendered tag content
       parts.push(render(match[1]));
       lastIndex = regex.lastIndex;
     }
 
-    // Add remaining text
     if (lastIndex < text.length) {
       parts.push(text.slice(lastIndex));
     }
 
-    return parts.length > 1 ? <>{parts}</> : text;
+    // Always return a fragment so further parseTag calls can process the result recursively
+    return <>{parts}</>;
   };
 
   const parseUrlTag = (text: string): React.ReactNode => {
@@ -305,15 +335,15 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
                 </div>
                 <div className="flex-1">
                   <DialogTitle className="text-left text-2xl font-bold text-white mb-3 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                    {patchNote.title}
+                    {patchNote.gameName}
                   </DialogTitle>
                   <div className="flex items-center space-x-4 mb-4">
-                    <span className="text-cyan-300 font-medium text-lg">{patchNote.gameName}</span>
+                    <span className="text-cyan-300 font-medium text-lg">{patchNote.announcement_body.headline}</span>
                   </div>
                   <div className="flex items-center space-x-6 text-sm text-gray-400">
                     <span className="flex items-center space-x-2 glass-effect px-3 py-1 rounded-lg">
                       <Calendar className="h-4 w-4 text-cyan-400" />
-                      <span className="text-cyan-300">{formatDate(patchNote.date)}</span>
+                      <span className="text-cyan-300">{formatDate(patchNote.announcement_body.posttime)}</span>
                     </span>
                   </div>
                 </div>
@@ -323,21 +353,25 @@ const SpecificPatchNoteModal: React.FC<SpecificPatchNoteModalProps> = ({
 
           <div className="mt-8">
             <div className="glass-effect border border-purple-500/30 rounded-2xl p-8">
-              {patchNote.fullContent ? (
-                <div className="prose prose-invert max-w-none">
-                  {formatContent(patchNote.fullContent)}
-                </div>
+              {patchNote.announcement_body.body ? (
+                <div
+                  className="prose prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: BBCodeHelper.parseBBCode(
+                      patchNote.announcement_body?.body ||
+                        "No body text."
+                    ),
+                  }}
+                />
               ) : (
-                <div className="text-center py-12">
-                  <div className="p-6 glass-effect rounded-2xl inline-block">
-                    <FileText className="h-16 w-16 mx-auto mb-6 text-purple-400" />
-                    <h3 className="text-2xl font-bold text-purple-300 mb-4">
-                      Detailed Content Unavailable
-                    </h3>
-                    <p className="text-gray-400 max-w-md mx-auto text-lg leading-relaxed">
-                      {patchNote.summary}
-                    </p>
-                  </div>
+                <div className="p-6 glass-effect rounded-2xl inline-block">
+                  <FileText className="h-16 w-16 mx-auto mb-6 text-purple-400" />
+                  <h3 className="text-2xl font-bold text-purple-300 mb-4">
+                    Detailed Content Unavailable
+                  </h3>
+                  <p className="text-gray-400 max-w-md mx-auto text-lg leading-relaxed">
+                    {patchNote.announcement_body?.headline}
+                  </p>
                 </div>
               )}
             </div>

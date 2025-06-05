@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MinHeap } from '@/utils/MinHeap';
 import { 
   Calendar, 
   Loader2, 
@@ -18,24 +19,41 @@ interface GameData {
 }
 
 interface RecentPatchNote {
-  id: string;
-  gameAppId: number;
+  gameAppId?: number;
   gameName: string;
   gameIcon: string;
-  title: string;
-  date: string;
-  summary: string;
-  fullContent?: string;
+  gid: string;
+  appid: number;
+  event_name: string;
+  rtime32_start_time: number;
+  rtime32_end_time: number;
+  event_type: number;
+  event_notes: string;
+  jsondata: string;
+  announcement_body?: {
+    gid: string;
+    headline: string;
+    body: string;
+    posttime: number;
+    updatetime: number;
+    commentcount: number;
+    tags: string[];
+    voteupcount: number;
+    votedowncount: number;
+    forum_topic_id: string;
+    clanid?: string | number;
+  };
 }
 
 interface RecentPatchFeedProps {
   games: GameData[];
+  recentPatches: RecentPatchNote[];
   onGameSelect: (game: GameData) => void;
   onPatchSelect: (patchNote: RecentPatchNote) => void;
+  apiKey?: string;
 }
 
-const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, onPatchSelect }) => {
-  const [recentPatches, setRecentPatches] = useState<RecentPatchNote[]>([]);
+const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, recentPatches, onGameSelect, onPatchSelect, apiKey}) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,78 +61,18 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
       if (games.length === 0) return;
       
       setLoading(true);
-      
-      // Simulate API call with mock data for recent patches across all games
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockRecentPatches: RecentPatchNote[] = [
-        {
-          id: 'cs2-major-1',
-          gameAppId: 730,
-          gameName: 'Counter-Strike 2',
-          gameIcon: 'c4b7e93b-3e5f-4b5e-9f2e-8a7d6c5b4a3f',
-          title: 'Winter Update 2024',
-          date: '2024-01-15',
-          summary: 'New winter maps, weapon balancing, and performance improvements.',
-          fullContent: `# Winter Update 2024\n\n## New Maps\n- de_winter: A snowy variant of the classic map\n- Winter collection featuring festive themes\n\n## Weapon Balancing\n- AK-47: Reduced recoil by 5%\n- M4A4: Increased damage falloff\n- AWP: Adjusted scope-in time\n\n## Performance Improvements\n- Optimized rendering for winter effects\n- Reduced memory usage by 15%\n- Fixed several crash issues`
-        },
-        {
-          id: 'dota-content-1',
-          gameAppId: 570,
-          gameName: 'Dota 2',
-          gameIcon: 'a2c4f8d9-7e1b-4c6a-8f3e-5d9a7b2c1e8f',
-          title: 'New Hero: Kez',
-          date: '2024-01-12',
-          summary: 'Introducing Kez, the latest hero with unique dual-weapon mechanics.',
-          fullContent: `# New Hero: Kez\n\n## Hero Overview\nKez is a versatile melee hero who can switch between two weapon modes:\n\n### Katana Mode\n- High mobility and burst damage\n- Perfect for initiation and escape\n\n### Sai Mode\n- Defensive capabilities and sustain\n- Ideal for team fights and protection\n\n## Abilities\n1. **Falcon Rush** - Dash forward dealing damage\n2. **Echo Slam** - AoE disable in both modes\n3. **Kazurai Katana** - Weapon mastery passive\n4. **Shodo Sai** - Defensive stance ultimate`
-        },
-        {
-          id: 'apex-major-1',
-          gameAppId: 1172470,
-          gameName: 'Apex Legends',
-          gameIcon: 'f7b3d5a1-9c8e-4f2a-b6d7-3a9c8f5e2b1d',
-          title: 'Season 19: Ignite',
-          date: '2024-01-10',
-          summary: 'New legend Conduit, map updates to Kings Canyon, and ranked changes.',
-          fullContent: `# Season 19: Ignite\n\n## New Legend: Conduit\n**Tactical:** Energy Barricade - Deploy an energy wall\n**Passive:** Savvy - Scan nearby enemies through walls\n**Ultimate:** Arc Flash - Team-wide speed and shield boost\n\n## Kings Canyon Updates\n- Reworked Artillery area\n- New rotation paths\n- Updated loot distribution\n\n## Ranked Changes\n- New tier: Apex Predator Master\n- Adjusted RP requirements\n- Improved matchmaking algorithms`
-        },
-        {
-          id: 'gta-hotfix-1',
-          gameAppId: 271590,
-          gameName: 'Grand Theft Auto V',
-          gameIcon: 'e8a9f2d3-4c7b-5e1f-9a8d-6f3e8a9c2b5d',
-          title: 'GTA Online Security Update',
-          date: '2024-01-08',
-          summary: 'Security improvements and bug fixes for GTA Online.',
-          fullContent: `# GTA Online Security Update\n\n## Security Improvements\n- Enhanced anti-cheat measures\n- Improved player reporting system\n- Fixed exploits in several missions\n\n## Bug Fixes\n- Resolved connection issues in public lobbies\n- Fixed vehicle duplication glitch\n- Corrected payout calculations for heists\n\n## Stability\n- Reduced crash frequency by 30%\n- Improved server stability during peak hours`
-        },
-        {
-          id: 'cs2-hotfix-1',
-          gameAppId: 730,
-          gameName: 'Counter-Strike 2',
-          gameIcon: 'c4b7e93b-3e5f-4b5e-9f2e-8a7d6c5b4a3f',
-          title: 'Balance Hotfix',
-          date: '2024-01-08',
-          summary: 'Quick fixes for gameplay balance issues reported by the community.',
-          fullContent: `# Balance Hotfix\n\n## Weapon Adjustments\n- Desert Eagle: Reduced one-shot headshot range\n- Galil AR: Slightly increased accuracy\n- Zeus: Fixed animation bug\n\n## Map Fixes\n- Mirage: Fixed pixel walk spots\n- Inferno: Adjusted smoke lineups\n- Dust2: Corrected collision issues\n\n## Gameplay\n- Fixed bomb defuse kit pickup bug\n- Improved server tick rate consistency\n- Resolved spectator mode issues`
-        }
-      ];
-      
-      // Filter patches to only include games that are in the user's library
-      const userGameIds = new Set(games.map(game => game.appid));
-      const filteredPatches = mockRecentPatches
-        .filter(patch => userGameIds.has(patch.gameAppId))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      setRecentPatches(filteredPatches);
+
       setLoading(false);
     };
 
     fetchRecentPatches();
   }, [games]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateInput: string | number) => {
+    // If input is a number, treat it as a Unix timestamp (seconds)
+    const date = typeof dateInput === 'number'
+      ? new Date(dateInput * 1000)
+      : new Date(dateInput);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -166,7 +124,7 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
           <div className="space-y-3 max-h-80 overflow-y-auto">
             {recentPatches.map((patch) => (
               <Card 
-                key={patch.id}
+                key={patch.gid}
                 className="bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-slate-500 transition-all duration-200 cursor-pointer"
                 onClick={() => handlePatchClick(patch)}
               >
@@ -187,16 +145,15 @@ const RecentPatchFeed: React.FC<RecentPatchFeedProps> = ({ games, onGameSelect, 
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-white text-sm truncate mb-1">
-                            {patch.title}
+                            {patch.announcement_body?.headline || patch.event_name}
                           </h4>
                           
                           <p className="text-xs text-slate-400 mb-1">{patch.gameName}</p>
-                          <p className="text-sm text-slate-300 leading-relaxed">{patch.summary}</p>
                           
                           <div className="flex items-center space-x-3 mt-2 text-xs text-slate-400">
                             <span className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
-                              <span>{formatDate(patch.date)}</span>
+                              <span>{formatDate(patch.announcement_body.posttime)}</span>
                             </span>
                           </div>
                         </div>

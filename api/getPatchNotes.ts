@@ -17,6 +17,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const steamRes = await fetch(
       `https://store.steampowered.com/events/ajaxgetadjacentpartnerevents/?appid=${appid}&count_before=0&count_after=${countAfter}&event_type_filter=${eventTypeFilter}`
     );
+    if (!steamRes.ok) {
+      const text = await steamRes.text();
+      console.log("Steam API error response:", text);
+      return res
+        .status(502)
+        .json({ error: "Steam API returned error", details: text });
+    }
+    
     const data = await steamRes.json();
 
     if (data.success && Array.isArray(data.events)) {

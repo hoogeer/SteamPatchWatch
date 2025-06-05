@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,136 +18,110 @@ import {
   Plus
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { MinHeap } from '@/utils/MinHeap';
+import BBCodeHelper from '@/utils/BBCodeHelper';
 
 interface GameData {
   appid: number;
   name: string;
   playtime_forever: number;
   img_icon_url: string;
+  has_community_visible_stats?: boolean;
 }
 
-interface PatchNote {
-  id: string;
-  title: string;
-  date: string;
-  version: string;
-  type: 'major' | 'minor' | 'hotfix' | 'content';
-  summary: string;
-  content: string;
-  imageUrl?: string;
-  downloadUrl?: string;
-  size?: string;
+interface RecentPatchNote {
+  gameAppId?: number;
+  gameName: string;
+  gameIcon: string;
+  gid: string;
+  appid: number;
+  event_name: string;
+  rtime32_start_time: number;
+  rtime32_end_time: number;
+  event_type: number;
+  event_notes: string;
+  jsondata: string;
+  announcement_body?: {
+    gid: string;
+    headline: string;
+    body: string;
+    posttime: number;
+    updatetime: number;
+    commentcount: number;
+    tags: string[];
+    voteupcount: number;
+    votedowncount: number;
+    forum_topic_id: string;
+    clanid?: string | number;
+  };
 }
 
 interface PatchNotesPanelProps {
   game: GameData;
   onClose: () => void;
+  apiKey?: string;
 }
 
-const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose }) => {
-  const [patchNotes, setPatchNotes] = useState<PatchNote[]>([]);
+const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose, apiKey }) => {
+  const [patchNotes, setPatchNotes] = useState<RecentPatchNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchPatchNotes = async () => {
+    const getPatchNotes = async () => {
       setLoading(true);
       
       // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      const heap = new MinHeap(3);
+      const seen = new Set<string>();
+      const notes = await fetchPatchNotes(game.appid, 3, "13,14", game.name, game.img_icon_url, game.appid);
+        notes.forEach((note) => {
+          if (note.announcement_body && note.announcement_body.posttime) {
+            const key = `${note.gid}_${note.appid}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              heap.push({ ...note, gameName: game.name });
+            }
+          }
+        });
       
-      const mockPatchNotes: PatchNote[] = [
-        {
-          id: '1',
-          title: 'Major Winter Update 2024',
-          date: '2024-01-15',
-          version: '2.4.0',
-          type: 'major',
-          summary: 'Introducing new winter maps, weapon balancing, and performance improvements.',
-          content: `This major update brings exciting new content and improvements:
-
-🗺️ **NEW MAPS**
-• Winter Palace - A snow-covered tactical map perfect for close-quarters combat
-• Frozen Harbor - Large-scale battles in an icy port environment
-• Arctic Base - Underground facility with multiple levels
-
-⚖️ **WEAPON BALANCING**
-• Assault Rifle damage reduced by 5%
-• Sniper rifle scope time decreased by 0.2s
-• Shotgun spread pattern improved for better consistency
-
-🔧 **PERFORMANCE IMPROVEMENTS**
-• Reduced loading times by up to 30%
-• Fixed memory leaks affecting long gaming sessions
-• Optimized rendering for better FPS on older hardware
-
-🐛 **BUG FIXES**
-• Fixed player models clipping through certain walls
-• Resolved audio desync issues in multiplayer
-• Fixed achievement unlock problems`,
-          imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&h=400&fit=crop',
-          downloadUrl: '#',
-          size: '2.3 GB'
-        },
-        {
-          id: '2',
-          title: 'Balance Hotfix',
-          date: '2024-01-08',
-          version: '2.3.2',
-          type: 'hotfix',
-          summary: 'Quick fixes for gameplay balance issues reported by the community.',
-          content: `Emergency hotfix addressing critical balance issues:
-
-⚡ **QUICK FIXES**
-• Fixed overpowered weapon damage in last update
-• Adjusted spawn points on newly released maps
-• Resolved server stability issues during peak hours
-
-🎯 **WEAPON ADJUSTMENTS**
-• SMG damage reduced by 8%
-• Pistol accuracy improved at medium range
-• Fixed reload animation timing issues
-
-🛡️ **STABILITY**
-• Improved anti-cheat detection
-• Fixed rare crash when loading certain maps
-• Better connection handling for high-latency players`,
-          size: '150 MB'
-        },
-        {
-          id: '3',
-          title: 'Holiday Content Pack',
-          date: '2023-12-20',
-          version: '2.3.0',
-          type: 'content',
-          summary: 'Festive skins, holiday-themed maps, and special event modes.',
-          content: `Get into the holiday spirit with new festive content:
-
-🎄 **HOLIDAY CONTENT**
-• 15 new festive weapon skins
-• Holiday-themed player emotes and victory dances
-• Special snow effects on all maps during event period
-
-🎮 **EVENT MODES**
-• Snowball Fight - Special limited-time game mode
-• Present Hunt - Find hidden gifts across maps for rewards
-• Holiday Mayhem - Faster respawns and special weapons
-
-🎁 **REWARDS**
-• Complete daily challenges for exclusive holiday items
-• Special holiday crates with rare cosmetics
-• Login rewards throughout the event period`,
-          imageUrl: 'https://images.unsplash.com/photo-1512389098783-66b81f86e199?w=800&h=400&fit=crop',
-          size: '1.8 GB'
-        }
-      ];
-      
-      setPatchNotes(mockPatchNotes);
+      setPatchNotes(heap.getSortedDesc());
       setLoading(false);
     };
 
-    fetchPatchNotes();
-  }, [game.appid]);
+    getPatchNotes();
+  }, [game]);
+
+  const fetchPatchNotes = async (
+    appid: number,
+    amount_of_events = 3,
+    event_type_filter = "13,14",
+    gameName?: string,
+    gameIcon?: string,
+    gameAppId?: number
+  ): Promise<RecentPatchNote[]> => {
+  try {
+    const url = apiKey
+      ? `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}&key=${encodeURIComponent(
+          apiKey
+        )}`
+      : `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    // Attach gameName and gameIcon to each patch note
+    return (data.patchNotes || []).map((note: RecentPatchNote) => ({
+      ...note,
+      gameName: gameName ?? "",
+      gameIcon: gameIcon ?? "",
+      gameAppId: gameAppId ?? 0,
+      appid,
+    }));
+  }
+  catch {
+    console.error(`Failed to fetch patch note for appid ${appid}.`);
+    return [];
+  }
+};
 
   const toggleExpanded = (noteId: string) => {
     const newExpanded = new Set(expandedNotes);
@@ -160,32 +133,18 @@ const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose }) => {
     setExpandedNotes(newExpanded);
   };
 
-  const getTypeIcon = (type: PatchNote['type']) => {
-    switch (type) {
-      case 'major': return <Zap className="h-4 w-4" />;
-      case 'minor': return <Wrench className="h-4 w-4" />;
-      case 'hotfix': return <Bug className="h-4 w-4" />;
-      case 'content': return <Plus className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const getTypeColor = (type: PatchNote['type']) => {
-    switch (type) {
-      case 'major': return 'bg-purple-600/20 text-purple-400 border-purple-500/30';
-      case 'minor': return 'bg-blue-600/20 text-blue-400 border-blue-500/30';
-      case 'hotfix': return 'bg-red-600/20 text-red-400 border-red-500/30';
-      case 'content': return 'bg-green-600/20 text-green-400 border-green-500/30';
-      default: return 'bg-gray-600/20 text-gray-400 border-gray-500/30';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const formatDate = (dateInput: string | number) => {
+    // If input is a number, treat it as a Unix timestamp (seconds)
+    const date = typeof dateInput === 'number'
+      ? new Date(dateInput * 1000)
+      : new Date(dateInput);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -231,35 +190,24 @@ const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose }) => {
           ) : (
             <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4">
               {patchNotes.map((note) => {
-                const isExpanded = expandedNotes.has(note.id);
+                const noteId = note.gid || note.appid.toString();
+                const isExpanded = expandedNotes.has(noteId);
                 return (
-                  <Card key={note.id} className="bg-slate-700/30 border-slate-600">
-                    <Collapsible>
+                  <Card key={noteId} className="bg-slate-700/30 border-slate-600">
+                    <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(noteId)}>
                       <CollapsibleTrigger asChild>
                         <CardHeader 
                           className="cursor-pointer hover:bg-slate-700/20 transition-colors"
-                          onClick={() => toggleExpanded(note.id)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <Badge className={getTypeColor(note.type)}>
-                                {getTypeIcon(note.type)}
-                                <span className="ml-1 capitalize">{note.type}</span>
-                              </Badge>
                               <div>
-                                <h3 className="font-semibold text-white">{note.title}</h3>
+                                <h3 className="font-semibold text-white">{note.gameName}</h3>
                                 <div className="flex items-center space-x-4 text-sm text-slate-400 mt-1">
                                   <span className="flex items-center space-x-1">
                                     <Calendar className="h-3 w-3" />
-                                    <span>{formatDate(note.date)}</span>
+                                    <span>{formatDate(note.announcement_body.posttime)}</span>
                                   </span>
-                                  <span>Version {note.version}</span>
-                                  {note.size && (
-                                    <span className="flex items-center space-x-1">
-                                      <Download className="h-3 w-3" />
-                                      <span>{note.size}</span>
-                                    </span>
-                                  )}
                                 </div>
                               </div>
                             </div>
@@ -269,39 +217,33 @@ const PatchNotesPanel: React.FC<PatchNotesPanelProps> = ({ game, onClose }) => {
                               <ChevronDown className="h-5 w-5 text-slate-400" />
                             )}
                           </div>
-                          <p className="text-slate-300 text-left mt-2">{note.summary}</p>
                         </CardHeader>
                       </CollapsibleTrigger>
-
                       <CollapsibleContent>
                         <CardContent className="pt-0 pb-4">
-                          {note.imageUrl && (
-                            <img
-                              src={note.imageUrl}
-                              alt={note.title}
-                              className="w-full h-48 object-cover rounded-lg mb-4"
-                            />
-                          )}
-                          
-                          <div className="prose prose-invert max-w-none">
-                            <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
-                              {note.content}
-                            </pre>
+                          <div style={{ color: 'white' }} className="prose prose-invert max-w-none">
+                            {note.announcement_body.body ? (
+                              <div
+                                className="prose prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: BBCodeHelper.parseBBCode(
+                                    note.announcement_body?.body ||
+                                      "No body text."
+                                  ),
+                                }}
+                              />
+                            ) : (
+                              <div className="p-6 glass-effect rounded-2xl inline-block">
+                                <FileText className="h-16 w-16 mx-auto mb-6 text-purple-400" />
+                                <h3 className="text-2xl font-bold text-purple-300 mb-4">
+                                  Detailed Content Unavailable
+                                </h3>
+                                <p className="text-gray-400 max-w-md mx-auto text-lg leading-relaxed">
+                                  {note.announcement_body?.headline}
+                                </p>
+                              </div>
+                            )}
                           </div>
-
-                          {note.downloadUrl && (
-                            <div className="mt-4 pt-4 border-t border-slate-600">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-blue-400 border-blue-500/50 hover:bg-blue-500/10"
-                                onClick={() => window.open(note.downloadUrl, '_blank')}
-                              >
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                View Full Patch Notes
-                              </Button>
-                            </div>
-                          )}
                         </CardContent>
                       </CollapsibleContent>
                     </Collapsible>

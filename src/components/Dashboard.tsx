@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,24 @@ import PatchNotesPanel from './PatchNotesPanel';
 import RecentPatchFeed from './RecentPatchFeed';
 import SpecificPatchNoteModal from './SpecificPatchNoteModal';
 import { useToast } from '@/hooks/use-toast';
+import { MinHeap } from '@/utils/MinHeap';
 
 interface SteamUser {
   steamid: string;
   personaname: string;
+  avatar: string;
+  avatarmedium: string;
   avatarfull: string;
   profileurl: string;
+  communityvisibilitystate: number;
+  profilestate?: number;
+  commentpermission?: number;
+  avatarhash?: string;
+  lastlogoff?: number;
+  personastate?: number;
+  primaryclanid?: string;
+  timecreated?: number;
+  personastateflags?: number;
 }
 
 interface GameData {
@@ -27,17 +39,34 @@ interface GameData {
   playtime_forever: number;
   img_icon_url: string;
   has_community_visible_stats?: boolean;
+  RecentPatchNotes?: RecentPatchNote[];
 }
 
 interface RecentPatchNote {
-  id: string;
-  gameAppId: number;
+  gameAppId?: number;
   gameName: string;
   gameIcon: string;
-  title: string;
-  date: string;
-  summary: string;
-  fullContent?: string;
+  gid: string;
+  appid: number;
+  event_name: string;
+  rtime32_start_time: number;
+  rtime32_end_time: number;
+  event_type: number;
+  event_notes: string;
+  jsondata: string;
+  announcement_body?: {
+    gid: string;
+    headline: string;
+    body: string;
+    posttime: number;
+    updatetime: number;
+    commentcount: number;
+    tags: string[];
+    voteupcount: number;
+    votedowncount: number;
+    forum_topic_id: string;
+    clanid?: string | number;
+  };
 }
 
 const Dashboard = () => {
@@ -48,71 +77,189 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [apiKey, setApiKey] = useState<string | undefined>(undefined);
+  const [recentPatches, setRecentPatches] = useState<RecentPatchNote[]>([]);
 
-  const handleUserSubmit = async (steamId: string, apiKey?: string) => {
-    console.log('Fetching Steam user data for:', steamId);
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call - In a real app, this would be proxied through your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful response
-      const mockUser: SteamUser = {
-        steamid: '76561198123456789',
-        personaname: 'GamerTag123',
-        avatarfull: 'https://avatars.steamstatic.com/b5bd56c1aa4644fccb9e7ac5baf1e8c7a5a1e8_full.jpg',
-        profileurl: 'https://steamcommunity.com/profiles/76561198123456789/'
-      };
+const handleUserSubmit = async (steamId: string, apiKeyInput?: string) => {
+  setApiKey(apiKeyInput);
+  setLoading(true);
+  setError(null);
 
-      const mockGames: GameData[] = [
-        {
-          appid: 730,
-          name: 'Counter-Strike 2',
-          playtime_forever: 2847,
-          img_icon_url: 'c4b7e93b-3e5f-4b5e-9f2e-8a7d6c5b4a3f',
-          has_community_visible_stats: true
-        },
-        {
-          appid: 570,
-          name: 'Dota 2',
-          playtime_forever: 1523,
-          img_icon_url: 'a2c4f8d9-7e1b-4c6a-8f3e-5d9a7b2c1e8f'
-        },
-        {
-          appid: 1172470,
-          name: 'Apex Legends',
-          playtime_forever: 987,
-          img_icon_url: 'f7b3d5a1-9c8e-4f2a-b6d7-3a9c8f5e2b1d'
-        },
-        {
-          appid: 271590,
-          name: 'Grand Theft Auto V',
-          playtime_forever: 654,
-          img_icon_url: 'e8a9f2d3-4c7b-5e1f-9a8d-6f3e8a9c2b5d'
-        }
-      ];
-
-      setSteamUser(mockUser);
-      setGames(mockGames.sort((a, b) => b.playtime_forever - a.playtime_forever));
-      
-      toast({
-        title: "Success!",
-        description: `Connected to ${mockUser.personaname}'s Steam account`,
-      });
-    } catch (err) {
-      const errorMessage = 'Failed to fetch Steam data. Please check your Steam ID and API key.';
-      setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  try {
+    // 1. Resolve vanity URL if needed
+    let resolvedSteamId = steamId;
+    if (!isSteamId64(steamId)) {
+      const vanityId = await resolveVanityUrl(steamId, apiKey || "");
+      if (!vanityId) {
+        throw new Error('Failed to resolve Steam ID');
+      }
+      resolvedSteamId = vanityId;
     }
-  };
+
+    // 2. Fetch user profile
+    const profileRes = await fetch(`/api/getProfile?steamid=${encodeURIComponent(resolvedSteamId)}${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`);
+    const profileData = await profileRes.json();
+    if (!profileRes.ok || !profileData.player) {
+      // Improved error handling for Steam API errors
+      if (profileData.error && profileData.details) {
+        throw new Error(`${profileData.error}: ${profileData.details}`);
+      } else if (profileData.error) {
+        throw new Error(profileData.error);
+      } else {
+        throw new Error('Failed to fetch Steam profile');
+      }
+    }
+    const user = profileData.player;
+
+    setSteamUser(user);
+    
+    toast({
+      title: "Success!",
+      description: `Connected to ${user.personaname}'s Steam account`,
+    });
+
+    // 3. Fetch games
+    let gamesRes, gamesData;
+    let gamesFetchAttempts = 0;
+    const maxGamesFetchRetries = 5; // Optional: limit retries to avoid infinite loop
+    while (true) {
+      try {
+        gamesRes = await fetch(`/api/getGames?steamid=${encodeURIComponent(resolvedSteamId)}${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`);
+        gamesData = await gamesRes.json();
+        if (gamesRes.ok && gamesData.response?.games) {
+          break; // Success
+        } else {
+          throw new Error(gamesData.error || 'Failed to fetch games');
+        }
+      } catch (err) {
+        gamesFetchAttempts++;
+        toast({
+          title: "Retrying...",
+          description: `Failed to fetch games. Retrying in 5 seconds... (${gamesFetchAttempts})`,
+          variant: "destructive",
+        });
+        if (gamesFetchAttempts >= maxGamesFetchRetries) {
+          throw new Error(gamesData?.error || 'Failed to fetch games after multiple attempts');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    }
+    const gamesList = gamesData.response.games.map((game: GameData) => ({
+      appid: game.appid,
+      name: game.name,
+      playtime_forever: game.playtime_forever,
+      img_icon_url: game.img_icon_url,
+      has_community_visible_stats: game.has_community_visible_stats,
+    }));
+
+    setGames(gamesList.sort((a, b) => b.playtime_forever - a.playtime_forever));
+
+  } catch (err: unknown) {
+    const errorMessage =
+      err && typeof err === "object" && "message" in err && typeof (err as { message?: unknown }).message === "string"
+        ? (err as { message: string }).message
+        : 'Failed to fetch Steam data. Please check your Steam ID and API key.';
+    setError(errorMessage);
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  if (games.length > 0 && apiKey !== undefined) {
+    fetchMajorUpdates();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [games, apiKey]);
+
+const fetchMajorUpdates = async () => {
+  try {
+    const topGames = [...games];
+    const heap = new MinHeap(75); // Keep only top 100 most recent
+    const seen = new Set<string>();
+    let completed = 0;
+    await Promise.all(
+      topGames.map(async (game) => {
+        const notes = await fetchPatchNotes(game.appid, 3, "13,14", game.name, game.img_icon_url, game.appid);
+        notes.forEach((note) => {
+          if (note.announcement_body && note.announcement_body.posttime) {
+            const key = `${note.gid}_${note.appid}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              heap.push({ ...note, gameName: game.name });
+            }
+          }
+        });
+        completed++;
+        //setMajorUpdatesProgress(completed);
+      })
+    );
+    setRecentPatches(heap.getSortedDesc());
+  } catch {
+    setError("Failed to load major updates.");
+  }
+};
+
+const fetchPatchNotes = async (
+    appid: number,
+    amount_of_events = 3,
+    event_type_filter = "13,14",
+    gameName?: string,
+    gameIcon?: string,
+    gameAppId?: number
+  ): Promise<RecentPatchNote[]> => {
+  try {
+    const url = apiKey
+      ? `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}&key=${encodeURIComponent(
+          apiKey
+        )}`
+      : `/api/getPatchNotes?appid=${appid}&amount_of_events=${amount_of_events}&event_type_filter=${event_type_filter}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    // Attach gameName and gameIcon to each patch note
+    return (data.patchNotes || []).map((note: RecentPatchNote) => ({
+      ...note,
+      gameName: gameName ?? "",
+      gameIcon: gameIcon ?? "",
+      gameAppId: gameAppId ?? 0,
+      appid,
+    }));
+  }
+  catch {
+    console.error(`Failed to fetch patch note for appid ${appid}.`);
+    return [];
+  }
+};
+
+async function resolveVanityUrl(
+    username: string,
+    apiKey: string
+  ): Promise<string | null> {
+    try {
+      const url = apiKey
+        ? `/api/getSteamId?username=${encodeURIComponent(
+            username
+          )}&apiKey=${encodeURIComponent(apiKey)}`
+        : `/api/getSteamId?username=${encodeURIComponent(username)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.steamid) {
+        return data.steamid;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  function isSteamId64(input: string) {
+    return /^\d{17}$/.test(input);
+  }
 
   const formatPlaytime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -192,8 +339,10 @@ const Dashboard = () => {
                   <TabsContent value="updates" className="mt-6 flex-1 overflow-hidden">
                     <RecentPatchFeed 
                       games={games} 
+                      recentPatches={recentPatches}
                       onGameSelect={setSelectedGame}
                       onPatchSelect={setSelectedPatchNote}
+                      apiKey={apiKey}
                     />
                   </TabsContent>
                   
@@ -245,6 +394,7 @@ const Dashboard = () => {
           <PatchNotesPanel 
             game={selectedGame}
             onClose={() => setSelectedGame(null)}
+            apiKey={apiKey}
           />
         )}
 
